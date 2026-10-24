@@ -23,6 +23,12 @@ network permission at all — it cannot phone home because it has no way to.
 
 ---
 
+## Demo
+
+[![the app running](docs/media/vinyl-player-demo.mp4)](docs/media/vinyl-player-demo.mp4)
+
+A 27-second look at the opening screen and the player: [`docs/media/vinyl-player-demo.mp4`](docs/media/vinyl-player-demo.mp4)
+
 ## Download
 
 **Download page:** <https://technicalnihilist-lgtm.github.io/vinyl-player/>
@@ -133,7 +139,7 @@ Then, from this folder:
 ```bash
 git init
 git add .
-git commit -m "Vinyl Player 43.0"
+git commit -m "Vinyl Player 50.0"
 git branch -M main
 git remote add origin https://github.com/YOUR-USERNAME/vinyl-player.git
 git push -u origin main
