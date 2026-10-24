@@ -7,6 +7,59 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 70 — 24 October 2026
+
+**Only the first screenful animates in.** Every row ran the entrance animation,
+so a long library kept animating for seconds after it was already on screen. The
+first fourteen rows animate; the rest simply appear.
+
+## 69 — 24 October 2026
+
+**An unchanged now-playing payload is no longer sent.** The page compared
+nothing, so an identical payload crossed the bridge each time the effect ran.
+
+## 68 — 24 October 2026
+
+**Dead custom properties removed.** `--glass-blur`, `--glass-sat`,
+`--glass-tint`, `--glass-tint-2` and `--r-lg` were declared and never read.
+
+## 67 — 24 October 2026
+
+**The drift stops when nothing is playing.** Three continuous compositor
+animations ran whether or not any music was playing. They now pause while the
+player is idle.
+
+## 66 — 24 October 2026
+
+**The list no longer chains its scroll to the page.** `overscroll-behavior:
+contain` stops it handing the scroll on at the ends, which reads as a jolt.
+
+## 65 — 24 October 2026
+
+**Album art decodes off the main thread.** `loading="lazy"` and
+`decoding="async"` on every cover image.
+
+## 64 — 24 October 2026
+
+**The glass halo trimmed.** A 44px blur behind every glass surface became 26px.
+
+## 63 — 24 October 2026
+
+**The visualiser runs at 30fps, not 60.** It was a full canvas redraw every
+frame for a difference nobody can see.
+
+## 62 — 24 October 2026
+
+**Off-screen rows are skipped entirely.** `content-visibility: auto` with
+`contain-intrinsic-size` means a library of a few hundred songs no longer lays
+out and paints the whole library to show ten rows.
+
+## 61 — 24 October 2026
+
+**A real bug: the third ambient blob ignored the Style setting.** `--blob-3` was
+declared but never read, so changing the background mood left that one blob on
+its old colour.
+
 ## 60 — 24 October 2026
 
 **The volume now follows the phone.** `HTMLMediaElement.volume` is a separate
