@@ -161,30 +161,28 @@ select {
     rgba(255, 255, 255, 0.13) 70%,
     rgba(255, 255, 255, 0.22) 100%
   );
+  /* The rim lives entirely in these shadows: a bright top edge, a dim bottom
+     edge, a soft halo, and a hairline all round. Every one of them follows
+     border-radius on every renderer — unlike the masked gradient border this
+     replaced, which Android WebView painted as a hard-edged rectangle. */
   box-shadow: var(--shadow-lift), 0 0 44px rgba(255, 255, 255, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 rgba(255, 255, 255, 0.14);
+    inset 0 1.25px 0 rgba(255, 255, 255, 0.66), inset 0 -1.25px 0 rgba(255, 255, 255, 0.15),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.13);
 }
 
 /* specular rim — bright top-left, dim, bright bottom-right */
+/* The specular rim.
+ *
+ * This used to be a gradient border drawn with a mask (mask-composite: exclude).
+ * Android WebView never implemented mask-composite properly: where it is missing
+ * the mask is dropped and the pseudo-element paints as a hard-edged bright
+ * rectangle over the whole panel — the "glitchy player bar" that shows up on
+ * phones but never in a desktop browser.
+ *
+ * Inset box-shadows give the same top-lit rim, follow border-radius everywhere,
+ * and cannot fail. */
 .glass::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1.25px;
-  background: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0.98),
-    rgba(255, 255, 255, 0.3) 20%,
-    rgba(255, 255, 255, 0.1) 50%,
-    rgba(255, 255, 255, 0.6) 100%
-  );
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  pointer-events: none;
-  z-index: 3;
+  content: none;
 }
 
 /* highlight that follows the pointer */
@@ -596,7 +594,9 @@ select {
   padding: 22px;
   border-radius: var(--r-xl);
   animation: glass-in 0.42s var(--ease-out) both;
-  transition: opacity 0.26s ease, transform 0.28s var(--ease-out), visibility 0.26s;
+  /* no transform here: a promoted layer can leave a stale border behind on
+     Android WebView. Opacity and visibility animate without one. */
+  transition: opacity 0.26s ease, visibility 0.26s;
 }
 
 @keyframes glass-in {
@@ -612,7 +612,6 @@ select {
 
 .app--collapsed .panel {
   opacity: 0;
-  transform: translateX(34px) scale(0.98);
   visibility: hidden;
   pointer-events: none;
 }
