@@ -30,8 +30,11 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      // Register the offline shell. Failure is fine — the app still runs.
-      if ('serviceWorker' in navigator) {
+      // Register the offline shell — but not inside the Android app, where the
+      // native layer already serves the app from its own intercepted origin and
+      // a second cache in front of it would only add a way to go wrong.
+      // Failure is fine everywhere: the app still runs.
+      if ('serviceWorker' in navigator && !window.AndroidBridge) {
         window.addEventListener('load', function () {
           navigator.serviceWorker.register('./sw.js').catch(function () {});
         });
