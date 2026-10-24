@@ -16,6 +16,23 @@
   --muted-2: rgba(240, 243, 252, 0.38);
   --accent: #7c3aed;
 
+  /* Everything the Style panel can change. The defaults here are what the app
+     uses before React has applied the user's choices, so the first paint is
+     already right. */
+  --bg-a: #17102e;
+  --bg-b: #0a0716;
+  --bg-c: #04040a;
+  --blob-1: rgba(124, 58, 237, 0.85);
+  --blob-2: rgba(37, 99, 235, 0.8);
+  --blob-3: rgba(192, 132, 252, 0.75);
+  --disc-a: #26262f;
+  --disc-b: #101016;
+  --disc-c: #040407;
+  --g1: 0.26;
+  --g2: 0.09;
+  --g3: 0.13;
+  --g4: 0.22;
+
   --glass-tint: rgba(255, 255, 255, 0.1);
   --glass-tint-2: rgba(255, 255, 255, 0.03);
   --glass-line: rgba(255, 255, 255, 0.22);
@@ -78,7 +95,7 @@ select {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: radial-gradient(140% 120% at 20% 0%, #17102e 0%, #0a0716 45%, #04040a 100%);
+  background: radial-gradient(140% 120% at 20% 0%, var(--bg-a) 0%, var(--bg-b) 45%, var(--bg-c) 100%);
   isolation: isolate;
 }
 
@@ -109,7 +126,7 @@ select {
   height: 46%;
   left: 4%;
   top: 6%;
-  background: radial-gradient(circle at 40% 40%, rgba(124, 58, 237, 0.85), rgba(124, 58, 237, 0) 68%);
+  background: radial-gradient(circle at 40% 40%, var(--blob-1), transparent 68%);
   animation: drift-1 26s ease-in-out infinite alternate;
 }
 
@@ -118,7 +135,7 @@ select {
   height: 52%;
   right: 0%;
   top: 12%;
-  background: radial-gradient(circle at 60% 40%, rgba(37, 99, 235, 0.8), rgba(37, 99, 235, 0) 68%);
+  background: radial-gradient(circle at 60% 40%, var(--blob-2), transparent 68%);
   animation: drift-2 32s ease-in-out infinite alternate;
 }
 
@@ -156,10 +173,10 @@ select {
      nothing visible. The glass reads from the tint, the rim and the sheen. */
   background: linear-gradient(
     150deg,
-    rgba(255, 255, 255, 0.26) 0%,
-    rgba(255, 255, 255, 0.09) 38%,
-    rgba(255, 255, 255, 0.13) 70%,
-    rgba(255, 255, 255, 0.22) 100%
+    rgba(255, 255, 255, var(--g1)) 0%,
+    rgba(255, 255, 255, var(--g2)) 38%,
+    rgba(255, 255, 255, var(--g3)) 70%,
+    rgba(255, 255, 255, var(--g4)) 100%
   );
   /* The rim lives entirely in these shadows: a bright top edge, a dim bottom
      edge, a soft halo, and a hairline all round. Every one of them follows
@@ -457,7 +474,7 @@ select {
   height: 100%;
   border-radius: 50%;
   overflow: hidden;
-  background: radial-gradient(circle at 50% 42%, #26262f 0%, #101016 46%, #040407 100%);
+  background: radial-gradient(circle at 50% 42%, var(--disc-a) 0%, var(--disc-b) 46%, var(--disc-c) 100%);
   box-shadow: 0 30px 56px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08),
     inset 0 2px 0 rgba(255, 255, 255, 0.16), inset 0 -20px 60px rgba(0, 0, 0, 0.8);
 }
@@ -1955,4 +1972,221 @@ select {
   0%   { opacity: 0; transform: scale(0.78); }
   68%  { opacity: 1; transform: scale(1.06); }
   100% { opacity: 1; transform: scale(1); }
+}
+
+/* ------------------------------------------------------------- style panel */
+.style {
+  margin-top: 6px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.style__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.style__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: #fff;
+}
+.style__reset {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.16s ease, opacity 0.16s ease;
+}
+.style__reset:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.09);
+}
+.style__reset:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.style__lede {
+  margin: 4px 0 18px;
+  font-size: 13px;
+  color: var(--muted-2);
+}
+.style__group {
+  margin-bottom: 20px;
+}
+.style__label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.86);
+  margin-bottom: 10px;
+}
+.style__value {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted-2);
+  font-variant-numeric: tabular-nums;
+}
+.style__hint {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted-2);
+}
+.style__switch {
+  margin-top: 14px;
+}
+
+/* colour swatches */
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.swatch {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  background: var(--sw);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28), 0 3px 10px rgba(0, 0, 0, 0.34);
+  transition: transform 0.16s var(--spring-snap), box-shadow 0.16s ease;
+}
+.swatch:hover {
+  transform: scale(1.07);
+}
+.swatch:active {
+  transform: scale(0.94);
+}
+.swatch.is-on {
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.9), 0 0 0 3px rgba(255, 255, 255, 0.22),
+    0 3px 12px rgba(0, 0, 0, 0.4);
+}
+.swatch--custom {
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24);
+  overflow: hidden;
+}
+.swatch--custom input {
+  position: absolute;
+  inset: -10%;
+  width: 120%;
+  height: 120%;
+  opacity: 0;
+  cursor: pointer;
+  border: 0;
+  padding: 0;
+}
+.swatch--custom span {
+  font-size: 20px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.72);
+  pointer-events: none;
+}
+
+/* background moods */
+.moods {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
+}
+.mood {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.16s var(--spring-snap), background 0.16s ease, border-color 0.16s ease;
+}
+.mood:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.mood:active {
+  transform: scale(0.97);
+}
+.mood.is-on {
+  border-color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+.mood__dots {
+  display: flex;
+}
+.mood__dots i {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  margin-right: -4px;
+  box-shadow: 0 0 0 1.5px rgba(10, 8, 18, 0.7);
+}
+.mood__name {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+}
+
+/* sliders */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 30px;
+  background: transparent;
+  cursor: pointer;
+}
+.slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), rgba(255, 255, 255, 0.16));
+}
+.slider::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), rgba(255, 255, 255, 0.16));
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: #fff;
+  border: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.16);
+  transition: transform 0.14s var(--spring-snap);
+}
+.slider:active::-webkit-slider-thumb {
+  transform: scale(1.14);
+}
+.slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+.slider:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 999px;
 }

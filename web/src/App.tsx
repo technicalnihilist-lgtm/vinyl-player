@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePlayer } from './hooks/usePlayer';
 import { useReducedMotion } from './hooks/useReducedMotion';
 import { useSettings } from './hooks/useSettings';
+import { useStyle, styleVars } from './hooks/useStyle';
 import { useSheen } from './hooks/useSheen';
 import { AmbientBackground } from './components/AmbientBackground';
 import { Vinyl } from './components/Vinyl';
@@ -20,6 +20,7 @@ export default function App() {
   const { state, engine, currentTrack, actions, library } = usePlayer();
   const reducedMotion = useReducedMotion();
   const { settings, toggle: toggleSetting, reset: resetSettings } = useSettings();
+  const { style, update: updateStyle, reset: resetStyle } = useStyle();
   const [panelOpen, setPanelOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -78,12 +79,15 @@ export default function App() {
   }, [settings.autoplay, state.tracks.length, actions]);
 
   const liked = currentTrack ? !!state.liked[currentTrack.id] : false;
-  const accent = currentTrack?.palette[1] ?? '#7c3aed';
+  // Every colour and measurement in the player comes from the user's Style,
+  // applied once here as custom properties — changing one re-themes the whole
+  // UI without re-rendering the tree.
+  const vars = useMemo(() => styleVars(style, currentTrack?.palette[1]), [style, currentTrack?.palette]);
 
   return (
     <div
       className={`app${panelOpen ? '' : ' app--collapsed'}${reducedMotion || !settings.glass ? ' app--calm' : ''}`}
-      style={{ '--accent': accent } as CSSProperties}
+      style={vars}
     >
       {showSplash && <Splash onDone={() => setShowSplash(false)} />}
 
@@ -224,6 +228,9 @@ export default function App() {
         settings={settings}
         onToggle={toggleSetting}
         onReset={resetSettings}
+        style={style}
+        onStyleChange={updateStyle}
+        onStyleReset={resetStyle}
         onClose={() => setSettingsOpen(false)}
       />
 

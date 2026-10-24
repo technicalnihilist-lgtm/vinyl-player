@@ -1,5 +1,7 @@
 import type { Settings } from '../hooks/useSettings';
+import type { Style } from '../hooks/useStyle';
 import { Switch } from './Switch';
+import { StylePanel } from './StylePanel';
 import { CloseIcon } from './Icons';
 
 interface Props {
@@ -7,6 +9,9 @@ interface Props {
   settings: Settings;
   onToggle: (key: keyof Settings) => void;
   onReset: () => void;
+  style: Style;
+  onStyleChange: <K extends keyof Style>(key: K, value: Style[K]) => void;
+  onStyleReset: () => void;
   onClose: () => void;
 }
 
@@ -20,7 +25,7 @@ const ROWS: { key: keyof Settings; label: string; hint: string }[] = [
 ];
 
 /** The options sheet: one sliding switch per setting. */
-export function SettingsSheet({ open, settings, onToggle, onReset, onClose }: Props) {
+export function SettingsSheet({ open, settings, onToggle, onReset, style, onStyleChange, onStyleReset, onClose }: Props) {
   return (
     <div className={`sheet-layer${open ? ' is-open' : ''}`} aria-hidden={!open}>
       <div className="sheet-layer__scrim" onClick={onClose} />
@@ -43,6 +48,8 @@ export function SettingsSheet({ open, settings, onToggle, onReset, onClose }: Pr
               onChange={() => onToggle(row.key)}
             />
           ))}
+
+          <StylePanel style={style} onChange={onStyleChange} onReset={onStyleReset} />
         </div>
 
         <footer className="sheet__foot">
