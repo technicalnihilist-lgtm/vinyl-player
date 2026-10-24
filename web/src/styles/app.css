@@ -97,6 +97,11 @@ select {
   overflow: hidden;
   background: radial-gradient(140% 120% at 20% 0%, var(--bg-a) 0%, var(--bg-b) 45%, var(--bg-c) 100%);
   isolation: isolate;
+  /* Android 15 draws apps edge to edge, so the layout has to keep clear of the
+     status and navigation bars itself. The native side measures them and sets
+     these; the env() values are the fallback for a plain browser. */
+  padding-top: var(--safe-top, env(safe-area-inset-top, 0px));
+  padding-bottom: var(--safe-bottom, env(safe-area-inset-bottom, 0px));
 }
 
 /* --------------------------------------------------- drifting colour field */
@@ -1315,7 +1320,7 @@ select {
   width: min(540px, 100%);
   max-height: 88vh;
   overflow-y: auto;
-  padding: 20px 18px calc(22px + env(safe-area-inset-bottom, 0px));
+  padding: 20px 18px calc(22px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
   border-radius: 30px 30px 0 0;
   transform: translate(-50%, 102%);
   transition: transform 0.28s var(--spring);

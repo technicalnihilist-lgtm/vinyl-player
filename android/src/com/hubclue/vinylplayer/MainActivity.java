@@ -9,6 +9,7 @@ import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.database.Cursor;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
@@ -17,7 +18,10 @@ import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.util.LruCache;
+import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowInsets;
 import android.view.Display;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
@@ -87,6 +91,14 @@ public class MainActivity extends Activity {
         web.addJavascriptInterface(new Bridge(), "AndroidBridge");
         web.setWebViewClient(new LocalClient());
         setContentView(web);
+
+        // Android 15 forces every app to draw edge to edge, so the window no
+        // longer keeps itself clear of the status and navigation bars. Left
+        // alone, the player bar ends up under the navigation bar, or a band of
+        // bare window shows beneath it. Measure the bars and hand their heights
+        // to the stylesheet, which pads the layout by exactly that much.
+        applyEdgeToEdge();
+        watchSystemBars();
 
         requestHighRefreshRate();
 
@@ -161,6 +173,66 @@ public class MainActivity extends Activity {
         } catch (Exception ignored) {
             // Nothing to do — the system keeps its own refresh rate.
         }
+    }
+
+    // ------------------------------------------------------- system bars
+    /** Draw behind the system bars — which Android 15 requires anyway. */
+    private void applyEdgeToEdge() {
+        Window w = getWindow();
+        if (Build.VERSION.SDK_INT >= 30) {
+            w.setDecorFitsSystemWindows(false);
+        } else {
+            w.getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+        }
+        w.setStatusBarColor(Color.TRANSPARENT);
+        w.setNavigationBarColor(Color.TRANSPARENT);
+        if (Build.VERSION.SDK_INT >= 29) {
+            // Otherwise Android paints its own scrim behind the gesture bar and
+            // the bottom of the app looks like it has a grey strip under it.
+            w.setNavigationBarContrastEnforced(false);
+            w.setStatusBarContrastEnforced(false);
+        }
+    }
+
+    private int insetTop = -1;
+    private int insetBottom = -1;
+
+    /** Push the bar heights into the page so the layout can keep clear of them. */
+    private void watchSystemBars() {
+        web.setOnApplyWindowInsetsListener((view, insets) -> {
+            int top;
+            int bottom;
+            if (Build.VERSION.SDK_INT >= 30) {
+                Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
+                top = bars.top;
+                bottom = bars.bottom;
+            } else {
+                top = insets.getSystemWindowInsetTop();
+                bottom = insets.getSystemWindowInsetBottom();
+            }
+            float density = getResources().getDisplayMetrics().density;
+            final int t = Math.max(0, Math.round(top / density));
+            final int b = Math.max(0, Math.round(bottom / density));
+            if (t != insetTop || b != insetBottom) {
+                insetTop = t;
+                insetBottom = b;
+                view.post(() -> web.evaluateJavascript(
+                        "(function(){var r=document.documentElement.style;"
+                                + "r.setProperty('--safe-top','" + t + "px');"
+                                + "r.setProperty('--safe-bottom','" + b + "px');})()",
+                        null));
+            }
+            // The page has been told how much room the bars need, so the WebView
+            // itself keeps the whole window and nothing is left uncovered.
+            if (Build.VERSION.SDK_INT >= 30) {
+                return WindowInsets.CONSUMED;
+            }
+            return insets.consumeSystemWindowInsets();
+        });
+        web.requestApplyInsets();
     }
 
     // ------------------------------------------------------------ permissions
