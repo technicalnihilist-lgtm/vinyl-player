@@ -1,0 +1,211 @@
+# Vinyl Player
+
+A **liquid-glass music player for Android that plays the songs already on your
+phone.** Nothing is bundled, nothing is downloaded, and the app asks for no
+network permission at all — it cannot phone home because it has no way to.
+
+<p align="center">
+  <img src="docs/screenshots/03-now-playing.jpg" width="240" alt="Now playing" />
+  <img src="docs/screenshots/41-settings.jpg" width="240" alt="Settings" />
+  <img src="docs/screenshots/14-vinyl-focus.jpg" width="240" alt="Vinyl" />
+</p>
+
+- **Your library, not ours.** Reads Android's media library and shows the cover
+  art embedded in each file.
+- **Liquid Glass.** Floating glass capsules, specular rims, a drifting colour
+  field, and a highlight that follows your finger.
+- **A record that really turns**, driven by real playback state.
+- **A visualiser that reacts to your music** — the audio is served same-origin,
+  so the analyser can actually read it.
+- **Smooth at 120 Hz**, with the per-frame work kept tiny on purpose.
+- **Six sliding switches** in Settings: spin, visualiser, numbers, compact rows,
+  auto-play, and the glass effects.
+
+---
+
+## Download
+
+**Website:** https://YOUR-USERNAME.github.io/vinyl-player/
+
+**Direct APK:** https://YOUR-USERNAME.github.io/vinyl-player/download/vinyl-player.apk
+
+Or grab `vinyl-player.apk` from the [Releases](../../releases) page.
+
+### Installing
+
+1. Download `vinyl-player.apk` on your Android device.
+2. Android will ask once — allow **"install unknown apps"** for your browser or
+   file manager.
+3. Open it and allow **music access** when asked. Your songs appear.
+
+Requires **Android 5.0 (API 21) or newer**. Version 43.0, about 420 KB.
+
+---
+
+## What is in this repository
+
+```
+web/        the player itself — React + TypeScript + Vite
+android/    the Android shell — a WebView, a MediaStore bridge, no Gradle
+docs/       the download website (published with GitHub Pages)
+store/      screenshots for the Google Play listing (1080 x 2160)
+.github/    the workflow that builds everything and publishes the site
+```
+
+### How the Android app works
+
+The UI is the web app, served from a private `https://` origin
+(`appassets.androidplatform.net`) that the app intercepts and answers from its
+own assets. Your music reaches that UI two ways:
+
+1. a JavaScript bridge (`window.AndroidBridge`) that reports the MediaStore
+   contents as JSON, and
+2. two intercepted routes — `/audio/<id>` and `/art/<id>` — that stream the song
+   and its embedded cover art back **from the same origin**.
+
+Serving the media from our own origin (rather than `content://`) keeps it
+same-origin with the page, which is what lets the Web Audio analyser read it.
+
+No music ships with the app. The APK contains only the UI.
+
+---
+
+## Build it yourself
+
+### The web app
+
+```bash
+cd web
+npm install
+npm run build      # type-checks, then builds to web/dist
+npm test           # unit tests
+```
+
+### The APK
+
+Needs a **JDK 17** and an **Android SDK** with `platforms;android-34` and
+`build-tools;34.0.0`. No Gradle, no Android Studio.
+
+```bash
+cd web && npm install && npm run build && cd ..
+cd android
+ANDROID_HOME=/path/to/android-sdk JAVA_HOME=/path/to/jdk-17 bash build.sh
+# -> android/build/vinyl-player.apk
+```
+
+`build.sh` finds the build-tools itself, so the only things it needs are
+`ANDROID_HOME` and a JDK on the path.
+
+### Regenerating the icon or the screenshots
+
+```bash
+python3 android/gen_icons.py     # the launcher icon (needs numpy + pillow)
+```
+
+---
+
+## Publishing this on GitHub
+
+### 1. Put the code on GitHub
+
+Create an empty **public** repository called `vinyl-player` at
+<https://github.com/new> — do **not** let GitHub add a README, .gitignore or
+licence, this repo already has them.
+
+Then, from this folder:
+
+```bash
+git init
+git add .
+git commit -m "Vinyl Player 43.0"
+git branch -M main
+git remote add origin https://github.com/YOUR-USERNAME/vinyl-player.git
+git push -u origin main
+```
+
+(Prefer the browser? On the empty repo page choose **uploading an existing
+file**, drag everything in, and commit. The command line is easier with this
+many files.)
+
+### 2. Turn on the download website (GitHub Pages)
+
+In the repository: **Settings → Pages**.
+
+- **Source: Deploy from a branch**
+- **Branch: `main`**, folder **`/docs`**
+- **Save**
+
+Wait a minute and your download page is live at:
+
+```
+https://YOUR-USERNAME.github.io/vinyl-player/
+```
+
+The APK is served straight from the repo at
+`/vinyl-player/download/vinyl-player.apk`, so the Download button works with no
+extra setup.
+
+> **Or let the workflow do it.** Set **Source: GitHub Actions** instead. The
+> included workflow builds the web app *and* the APK from source on every push
+> to `main`, drops the fresh APK into the site, and deploys it. That way the
+> published APK always matches the code.
+
+### 3. Publish a release with the APK attached
+
+```bash
+git tag v43.0
+git push origin v43.0
+```
+
+The workflow builds the APK and attaches it to a new **Release**, so people can
+download it from `https://github.com/YOUR-USERNAME/vinyl-player/releases`.
+
+### 4. (Optional) Put it on Google Play
+
+The APK in this repo is signed with a **throwaway debug key** — perfect for
+sideloading, not accepted by Play. For the store you need your own upload key:
+
+```bash
+keytool -genkeypair -v -keystore upload.jks -alias upload \
+        -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Then either sign the built APK:
+
+```bash
+$ANDROID_HOME/build-tools/34.0.0/apksigner sign \
+  --ks upload.jks --out vinyl-player-release.apk android/build/vinyl-player.apk
+```
+
+or, more usually, upload an **Android App Bundle** to Play and let Google sign
+it. Play also wants the screenshots from `store/` — they are already the right
+size (1080 × 2160, a 2:1 frame, which is the tallest Play accepts).
+
+---
+
+## Permissions
+
+| Permission | Why |
+|---|---|
+| `READ_MEDIA_AUDIO` (Android 13+) | read the device's music library |
+| `READ_EXTERNAL_STORAGE` (maxSdk 32) | the same, on older releases |
+
+There is deliberately **no `INTERNET` permission** — the app cannot reach the
+network even if it wanted to. The WebView is also locked to the app's own
+bundled content; every other navigation is refused.
+
+---
+
+## Notes and limitations
+
+- Only files Android's media scanner has indexed are listed. If a song is
+  missing, make sure it is in a normal Music folder and has been scanned.
+- The APK is built and structurally verified (signature schemes v1/v2/v3, dex
+  magic, manifest permissions, bundled UI, no bundled audio) and the web layer
+  is covered by an automated browser suite, but it has not been run on a
+  physical device by the author.
+- Screenshots in `store/` were captured against a simulated device library.
+
+## Licence
+
+MIT — see [LICENSE](LICENSE).
