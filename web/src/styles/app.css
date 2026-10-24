@@ -827,6 +827,11 @@ select {
 }
 
 /* --------------------------------------------------------------- track row */
+.track-row.track-row--in {
+  animation: row-in 0.5s var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 26ms);
+}
+
 .track-row {
   position: relative;
   contain: layout paint;
@@ -837,8 +842,9 @@ select {
   display: flex;
   align-items: center;
   gap: 4px;
-  animation: row-in 0.5s var(--ease-out) both;
-  animation-delay: calc(var(--i, 0) * 26ms);
+  /* Only the rows you can actually see animate in. Every row used to run this,
+     so a long library kept animating for seconds after it was on screen. */
+  animation: none;
 }
 
 @keyframes row-in {

@@ -36,7 +36,7 @@ export const TrackRow = memo(function TrackRow({
 }: Props) {
   return (
     <li
-      className={`track-row${isActive ? ' is-active' : ''}`}
+      className={`track-row${order < 14 ? ' track-row--in' : ''}${isActive ? ' is-active' : ''}`}
       data-track-id={track.id}
       style={{ '--i': Math.min(order, 18) } as CSSProperties}
     >
