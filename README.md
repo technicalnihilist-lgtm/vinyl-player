@@ -1,5 +1,8 @@
 # Vinyl Player
 
+**Current version: 58** · [Changelog](CHANGELOG.md) · every change is committed here as it is made
+
+
 **By Raju.**
 
 A **liquid-glass music player for Android that plays the songs already on your
