@@ -188,7 +188,7 @@ select {
      edge, a soft halo, and a hairline all round. Every one of them follows
      border-radius on every renderer — unlike the masked gradient border this
      replaced, which Android WebView painted as a hard-edged rectangle. */
-  box-shadow: var(--shadow-lift), 0 0 44px rgba(255, 255, 255, 0.07),
+  box-shadow: var(--shadow-lift), 0 0 26px rgba(255, 255, 255, 0.07),
     inset 0 1.25px 0 rgba(255, 255, 255, 0.66), inset 0 -1.25px 0 rgba(255, 255, 255, 0.15),
     inset 0 0 0 1px rgba(255, 255, 255, 0.13);
 }
