@@ -2211,25 +2211,42 @@ select {
   min-width: 0;
 }
 
-@media (max-width: 500px) {
-  .transport-row {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-  }
+/* Wrapping is always on and the capsules never shrink, so the row cannot
+   overflow at any width: if the two do not fit side by side they take a line
+   each. A media query alone was not enough — it depends on the reported viewport
+   width being what we expect, and it is not always. */
+.transport-row {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+.transport,
+.volume {
+  flex: 0 0 auto;
+  max-width: 100%;
+}
+
+/* Below the width where the transport capsule itself stops fitting, shrink the
+   controls rather than let anything spill. */
+@media (max-width: 380px) {
   .transport {
-    flex: 1 1 100%;
-    max-width: 100%;
+    gap: 4px;
+    padding: 5px 8px;
   }
-  .volume {
-    flex: 1 1 100%;
-    max-width: 100%;
-    justify-content: center;
+  .transport .icon-btn {
+    width: 32px;
+    height: 32px;
+  }
+  .transport__play {
+    width: 46px;
+    height: 46px;
+  }
+  .volume .icon-btn {
+    width: 30px;
+    height: 30px;
   }
   .volume__range {
-    flex: 1 1 auto;
-    width: auto;
-    min-width: 0;
+    width: 52px;
   }
 }
 

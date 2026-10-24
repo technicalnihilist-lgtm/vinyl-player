@@ -32,6 +32,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
+import android.widget.FrameLayout;
 import android.view.Display;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
@@ -126,7 +127,16 @@ public class MainActivity extends Activity {
 
         web.addJavascriptInterface(new Bridge(), "AndroidBridge");
         web.setWebViewClient(new LocalClient());
-        setContentView(web);
+
+        // The WebView goes inside a plain holder, and the holder is what gets
+        // padded. Padding the WebView directly does not reliably move the page:
+        // it renders into its own bounds, so the app kept drawing under the
+        // clock. A holder genuinely shrinks the WebView's box.
+        FrameLayout holder = new FrameLayout(this);
+        holder.setBackgroundColor(Color.parseColor("#05060C"));
+        holder.addView(web, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        setContentView(holder);
 
         // Android 15 forces every app to draw edge to edge, so the window no
         // longer keeps itself clear of the status and navigation bars. Left
@@ -134,7 +144,7 @@ public class MainActivity extends Activity {
         // bare window shows beneath it. Measure the bars and hand their heights
         // to the stylesheet, which pads the layout by exactly that much.
         applyEdgeToEdge();
-        watchSystemBars();
+        watchSystemBars(holder);
         setupNowPlaying();
 
         requestHighRefreshRate();
@@ -254,8 +264,8 @@ public class MainActivity extends Activity {
      * paint, which is why the topbar used to end up underneath the clock. Padding
      * the view is immediate and cannot be missed.
      */
-    private void watchSystemBars() {
-        web.setOnApplyWindowInsetsListener((view, insets) -> {
+    private void watchSystemBars(View holder) {
+        holder.setOnApplyWindowInsetsListener((view, insets) -> {
             int top;
             int bottom;
             if (Build.VERSION.SDK_INT >= 30) {
@@ -278,7 +288,7 @@ public class MainActivity extends Activity {
             }
             return insets.consumeSystemWindowInsets();
         });
-        web.requestApplyInsets();
+        holder.requestApplyInsets();
     }
 
     // ---------------------------------------------------------- now playing
