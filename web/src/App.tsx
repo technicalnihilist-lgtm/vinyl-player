@@ -152,7 +152,7 @@ export default function App() {
 
   return (
     <div
-      className={`app${panelOpen ? '' : ' app--collapsed'}${reducedMotion || !settings.glass ? ' app--calm' : ''}`}
+      className={`app${panelOpen ? '' : ' app--collapsed'}${state.isPlaying ? ' app--playing' : ''}${reducedMotion || !settings.glass ? ' app--calm' : ''}`}
       style={vars}
     >
       {showSplash && <Splash onDone={() => setShowSplash(false)} />}

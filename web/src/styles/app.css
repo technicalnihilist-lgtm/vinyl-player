@@ -104,6 +104,12 @@ select {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* Nothing is playing, so nothing needs to drift. Freezing the field while the
+   player is idle removes three continuous compositor animations. */
+.app:not(.app--playing) .ambient__blob {
+  animation-play-state: paused;
+}
+
 /* --------------------------------------------------- drifting colour field */
 .ambient {
   position: absolute;
