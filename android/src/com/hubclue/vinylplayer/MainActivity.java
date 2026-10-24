@@ -246,7 +246,14 @@ public class MainActivity extends Activity {
     private int insetTop = -1;
     private int insetBottom = -1;
 
-    /** Push the bar heights into the page so the layout can keep clear of them. */
+    /**
+     * Keep the page clear of the system bars.
+     *
+     * The WebView is padded by exactly the bar heights rather than the page being
+     * told about them over the bridge: the bridge call only lands after the first
+     * paint, which is why the topbar used to end up underneath the clock. Padding
+     * the view is immediate and cannot be missed.
+     */
     private void watchSystemBars() {
         web.setOnApplyWindowInsetsListener((view, insets) -> {
             int top;
@@ -259,20 +266,13 @@ public class MainActivity extends Activity {
                 top = insets.getSystemWindowInsetTop();
                 bottom = insets.getSystemWindowInsetBottom();
             }
-            float density = getResources().getDisplayMetrics().density;
-            final int t = Math.max(0, Math.round(top / density));
-            final int b = Math.max(0, Math.round(bottom / density));
-            if (t != insetTop || b != insetBottom) {
-                insetTop = t;
-                insetBottom = b;
-                view.post(() -> web.evaluateJavascript(
-                        "(function(){var r=document.documentElement.style;"
-                                + "r.setProperty('--safe-top','" + t + "px');"
-                                + "r.setProperty('--safe-bottom','" + b + "px');})()",
-                        null));
+            if (top != insetTop || bottom != insetBottom) {
+                insetTop = top;
+                insetBottom = bottom;
+                view.setPadding(0, top, 0, bottom);
             }
-            // The page has been told how much room the bars need, so the WebView
-            // itself keeps the whole window and nothing is left uncovered.
+            // The bars are accounted for by the padding, so the WebView itself
+            // keeps the whole window and nothing is left uncovered.
             if (Build.VERSION.SDK_INT >= 30) {
                 return WindowInsets.CONSUMED;
             }
