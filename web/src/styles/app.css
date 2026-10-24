@@ -33,14 +33,9 @@
   --g3: 0.13;
   --g4: 0.22;
 
-  --glass-tint: rgba(255, 255, 255, 0.1);
-  --glass-tint-2: rgba(255, 255, 255, 0.03);
   --glass-line: rgba(255, 255, 255, 0.22);
-  --glass-blur: 44px;
-  --glass-sat: 190%;
 
   --r-xl: 34px;
-  --r-lg: 26px;
   --r-md: 18px;
   --r-pill: 999px;
 
