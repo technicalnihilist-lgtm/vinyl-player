@@ -36,6 +36,17 @@ A 27-second look at the opening screen and the player: [`https://github.com/tech
 A 2:19 introduction to the app and to Liquid Glass:
 [`vinyl-player-intro-720p.mp4`](https://github.com/technicalnihilist-lgtm/vinyl-player/releases/download/v50.0/vinyl-player-intro-720p.mp4) · the 27-second demo: [`vinyl-player-demo.mp4`](https://github.com/technicalnihilist-lgtm/vinyl-player/releases/download/v50.0/vinyl-player-demo.mp4)
 
+## The now-playing card
+
+Android has no Dynamic Island — that is an iPhone feature. What Android gives an
+app instead is a `MediaSession` and a media notification, and that is what shows
+on the lock screen, in the notification shade, in the quick-settings media
+player, and in the control centre Xiaomi, Realme and Honor build on top of it.
+
+The page pushes the current song and play state across the bridge; the shell
+builds the card and sends the card's buttons back into the player. Android 13 and
+up ask for the notification permission the first time something is playing.
+
 ## Make it look how you want
 
 Settings has a **Style** panel, so the player does not have to look the way it
