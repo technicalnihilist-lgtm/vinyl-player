@@ -119,7 +119,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: desktop-${{ matrix.target }}-${{ matrix.arch }}
-          path: desktop/out/*
+          # Only the finished installers — electron-builder also leaves whole
+          # unpacked app directories in out/, and those must not reach a release.
+          path: |
+            desktop/out/*.exe
+            desktop/out/*.dmg
+            desktop/out/*.tar.gz
           if-no-files-found: warn
 
   release:
