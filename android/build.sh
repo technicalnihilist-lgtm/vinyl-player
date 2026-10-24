@@ -9,7 +9,7 @@
 #   JAVA_HOME      a JDK 17            (falls back to `javac` on PATH)
 #   ANDROID_HOME   an Android SDK      (or ANDROID_SDK_ROOT)
 #   WEB_DIST       the built web app   (defaults to ../web/dist)
-#   VERSION_CODE / VERSION_NAME        (default 43 / 43.0)
+#   VERSION_CODE / VERSION_NAME        (default 50 / 50.0)
 #
 # It writes build/vinyl-player.apk.
 set -euo pipefail
@@ -18,8 +18,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$ROOT/.." && pwd)"
 
 WEB_DIST="${WEB_DIST:-$REPO/web/dist}"
-VERSION_CODE="${VERSION_CODE:-43}"
-VERSION_NAME="${VERSION_NAME:-43.0}"
+VERSION_CODE="${VERSION_CODE:-50}"
+VERSION_NAME="${VERSION_NAME:-50.0}"
 
 SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
 

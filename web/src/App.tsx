@@ -13,6 +13,7 @@ import { Timeline } from './components/Timeline';
 import { TransportControls } from './components/TransportControls';
 import { VolumeControl } from './components/VolumeControl';
 import { SettingsSheet } from './components/SettingsSheet';
+import { Splash } from './components/Splash';
 import { ChevronDownIcon, ExpandIcon, HeartIcon, SettingsIcon } from './components/Icons';
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
   const [panelOpen, setPanelOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [showSplash, setShowSplash] = useState(true);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const folderRef = useRef<HTMLInputElement | null>(null);
   const panelRef = useRef<HTMLElement | null>(null);
@@ -83,6 +85,8 @@ export default function App() {
       className={`app${panelOpen ? '' : ' app--collapsed'}${reducedMotion || !settings.glass ? ' app--calm' : ''}`}
       style={{ '--accent': accent } as CSSProperties}
     >
+      {showSplash && <Splash onDone={() => setShowSplash(false)} />}
+
       <AmbientBackground />
 
       <header className="topbar">

@@ -31,6 +31,8 @@
   --shadow-soft: 0 8px 18px rgba(0, 0, 0, 0.3);
 
   --spring: cubic-bezier(0.22, 1.2, 0.36, 1);
+  /* micro-interactions: same character, quicker and crisper */
+  --spring-snap: cubic-bezier(0.34, 1.5, 0.5, 1);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
   color-scheme: dark;
@@ -251,7 +253,7 @@ select {
   color: rgba(255, 255, 255, 0.88);
   cursor: pointer;
   box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.45);
-  transition: transform 0.34s var(--spring), background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.22s var(--spring), background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .glass-pill {
@@ -279,8 +281,8 @@ select {
 .glass-pill:active,
 .icon-btn:active,
 .glass-btn:active {
-  transform: scale(0.9);
-  transition-duration: 0.1s;
+  transform: scale(0.94);
+  transition: transform 0.09s var(--spring-snap), background 0.09s ease, color 0.09s ease;
 }
 
 .icon-btn.is-active,
@@ -374,7 +376,7 @@ select {
   grid-template-columns: minmax(0, 1fr) minmax(390px, 470px);
   gap: 28px;
   padding: 10px 28px 28px;
-  transition: grid-template-columns 0.55s var(--ease-out);
+  transition: grid-template-columns 0.34s var(--ease-out);
 }
 
 .stage__left {
@@ -388,13 +390,13 @@ select {
 }
 
 .vinyl-slot {
-  animation: rise 0.6s var(--ease-out) both, float 7s ease-in-out 0.6s infinite;
+  animation: rise 0.4s var(--ease-out) both, float 7s ease-in-out 0.4s infinite;
 }
 
 .stage__now {
   text-align: center;
   max-width: 92%;
-  animation: rise 0.55s var(--ease-out) both;
+  animation: rise 0.34s var(--ease-out) both;
 }
 
 .now__title {
@@ -448,7 +450,7 @@ select {
   background: radial-gradient(circle at 50% 50%, var(--accent), transparent 66%);
   filter: blur(46px);
   opacity: 0.5;
-  transition: background 0.9s ease;
+  transition: background 0.5s ease;
 }
 
 .vinyl__disc {
@@ -593,8 +595,8 @@ select {
   min-width: 0;
   padding: 22px;
   border-radius: var(--r-xl);
-  animation: glass-in 0.7s var(--ease-out) both;
-  transition: opacity 0.4s ease, transform 0.45s var(--ease-out), visibility 0.4s;
+  animation: glass-in 0.42s var(--ease-out) both;
+  transition: opacity 0.26s ease, transform 0.28s var(--ease-out), visibility 0.26s;
 }
 
 @keyframes glass-in {
@@ -665,6 +667,7 @@ select {
 }
 
 .segmented__pill {
+  will-change: transform;
   position: absolute;
   top: 3px;
   left: 3px;
@@ -673,7 +676,7 @@ select {
   border-radius: var(--r-pill);
   background: linear-gradient(150deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.62));
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.32);
-  transition: transform 0.44s var(--spring);
+  transition: transform 0.27s var(--spring);
 }
 
 .segmented__pill.is-right {
@@ -691,7 +694,7 @@ select {
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: color 0.3s ease;
+  transition: color 0.2s ease;
 }
 
 .segmented__item.is-active {
@@ -710,7 +713,7 @@ select {
   background: rgba(255, 255, 255, 0.1);
   color: var(--muted);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
-  animation: rise 0.35s var(--ease-out) both;
+  animation: rise 0.23s var(--ease-out) both;
 }
 
 .glass-field input {
@@ -751,6 +754,7 @@ select {
 
 /* the highlight that slides from one song to the next */
 .playlist__lens {
+  will-change: transform;
   position: absolute;
   left: 4px;
   right: 4px;
@@ -760,7 +764,7 @@ select {
   box-shadow: 0 14px 34px rgba(88, 60, 220, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.5);
   /* Only `transform` is transitioned — animating `height` would force layout
      on every frame of the slide. */
-  transition: transform 0.46s var(--spring);
+  transition: transform 0.28s var(--spring);
   pointer-events: none;
 }
 
@@ -830,7 +834,7 @@ select {
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  transition: transform 0.3s var(--spring), background 0.25s ease;
+  transition: transform 0.2s var(--spring), background 0.16s ease;
 }
 
 .row:hover {
@@ -838,7 +842,8 @@ select {
 }
 
 .row:active {
-  transform: scale(0.985);
+  transform: scale(0.97);
+  transition-duration: 0.09s;
 }
 
 .track-row.is-active .row {
@@ -918,7 +923,7 @@ select {
   cursor: pointer;
   opacity: 0;
   transform: scale(0.9);
-  transition: opacity 0.25s ease, transform 0.34s var(--spring), color 0.25s ease, background 0.25s ease;
+  transition: opacity 0.16s ease, transform 0.22s var(--spring), color 0.16s ease, background 0.16s ease;
 }
 
 .track-row:hover .row__like,
@@ -950,7 +955,7 @@ select {
   animation-delay: 0.18s;
 }
 .row__eq.is-playing .eq-bar:nth-child(3) {
-  animation-delay: 0.36s;
+  animation-delay: 0.24s;
 }
 .row__eq.is-playing .eq-bar:nth-child(4) {
   animation-delay: 0.1s;
@@ -986,7 +991,7 @@ select {
   margin: 0;
   font-size: 12.5px;
   color: var(--muted);
-  animation: rise 0.4s var(--ease-out) both;
+  animation: rise 0.26s var(--ease-out) both;
 }
 
 /* --------------------------------------------------------------- timeline */
@@ -1046,7 +1051,7 @@ select {
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.28), 0 4px 12px rgba(0, 0, 0, 0.5);
-  transition: transform 0.3s var(--spring);
+  transition: transform 0.2s var(--spring);
 }
 
 .timeline__rail:hover .timeline__handle {
@@ -1080,7 +1085,7 @@ select {
   color: #0a0a12;
   cursor: pointer;
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  transition: transform 0.36s var(--spring), box-shadow 0.3s ease;
+  transition: transform 0.24s var(--spring), box-shadow 0.2s ease;
 }
 
 .transport__play:hover {
@@ -1110,7 +1115,7 @@ select {
   border-radius: 50%;
   border: 2.5px solid rgba(10, 10, 18, 0.22);
   border-top-color: #0a0a12;
-  animation: spin 0.7s linear infinite;
+  animation: spin 0.42s linear infinite;
 }
 
 @keyframes spin {
@@ -1191,7 +1196,7 @@ select {
   gap: 11px;
   padding: 28px 20px;
   text-align: center;
-  animation: rise 0.55s var(--ease-out) both;
+  animation: rise 0.34s var(--ease-out) both;
 }
 
 .empty__badge {
@@ -1297,7 +1302,7 @@ select {
   padding: 20px 18px calc(22px + env(safe-area-inset-bottom, 0px));
   border-radius: 30px 30px 0 0;
   transform: translate(-50%, 102%);
-  transition: transform 0.46s var(--spring);
+  transition: transform 0.28s var(--spring);
 }
 
 .sheet-layer.is-open .sheet {
@@ -1311,7 +1316,7 @@ select {
     border-radius: 30px;
     opacity: 0;
     transform: translate(-50%, -46%) scale(0.97);
-    transition: transform 0.42s var(--spring), opacity 0.3s ease;
+    transition: transform 0.42s var(--spring), opacity 0.2s ease;
   }
   .sheet-layer.is-open .sheet {
     opacity: 1;
@@ -1360,7 +1365,7 @@ select {
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  transition: background 0.25s ease, border-color 0.25s ease, transform 0.3s var(--spring);
+  transition: background 0.16s ease, border-color 0.16s ease, transform 0.2s var(--spring);
 }
 
 .setting:hover {
@@ -1369,7 +1374,8 @@ select {
 }
 
 .setting:active {
-  transform: scale(0.985);
+  transform: scale(0.97);
+  transition-duration: 0.09s;
 }
 
 .setting__text {
@@ -1747,4 +1753,207 @@ select {
 .app--calm .switch__knob,
 .app--calm .setting {
   transition: none;
+}
+
+/* ------------------------------------------------------- opening screen */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  cursor: pointer;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(124, 58, 237, 0.34), transparent 62%),
+    radial-gradient(100% 80% at 50% 110%, rgba(56, 189, 248, 0.22), transparent 60%),
+    #05060c;
+  animation: splash-in 0.5s var(--ease-out) both;
+}
+.splash.is-leaving {
+  animation: splash-out 0.42s var(--ease-out) both;
+  pointer-events: none;
+}
+@keyframes splash-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes splash-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.035); }
+}
+
+.splash__glow {
+  position: absolute;
+  width: 62vmax;
+  height: 62vmax;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.3), transparent 66%);
+  filter: blur(28px);
+  animation: splash-breathe 5.5s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes splash-breathe {
+  from { transform: scale(0.9) translateY(2%); opacity: 0.75; }
+  to { transform: scale(1.12) translateY(-2%); opacity: 1; }
+}
+
+.splash__inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  animation: splash-fade 0.4s ease both;
+}
+@keyframes splash-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.splash__mark {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  margin-bottom: 14px;
+  border-radius: 34px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.05));
+  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+.splash__disc {
+  position: absolute;
+  inset: 16px;
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.09) 0 1px, transparent 1px 4px),
+    radial-gradient(circle at 34% 30%, #2b2b3a, #0b0b12 62%);
+  box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.7);
+  animation: vinyl-spin 3.4s linear infinite;
+  will-change: transform;
+}
+.splash__hole {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(150deg, #c084fc, #6366f1);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1), 0 6px 18px rgba(124, 58, 237, 0.6);
+}
+
+.splash__name {
+  margin: 0;
+  font-size: 30px;
+  letter-spacing: -0.5px;
+  font-weight: 700;
+  color: #fff;
+}
+.splash__tag {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.splash__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 18px;
+  border-radius: 999px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.06));
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+  transition: transform 0.16s var(--spring-snap), background 0.16s ease;
+}
+.splash__badge:active {
+  transform: scale(0.95);
+}
+.splash__badge svg {
+  opacity: 0.9;
+}
+
+.splash__url {
+  margin: 10px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  color: rgba(255, 255, 255, 0.44);
+  word-break: break-all;
+  max-width: 320px;
+}
+
+.splash__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.5);
+}
+.splash__dot {
+  opacity: 0.5;
+}
+
+.splash__hint {
+  position: absolute;
+  bottom: 34px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 12.5px;
+  letter-spacing: 0.3px;
+  color: rgba(255, 255, 255, 0.4);
+  animation: hint-pulse 2.4s ease-in-out infinite;
+}
+@keyframes hint-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.75; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash__disc,
+  .splash__glow,
+  .splash__hint {
+    animation: none !important;
+  }
+}
+
+/* ---- staged reveal: icon, then the name, then GitHub, then the app ---- */
+.splash__mark {
+  animation: mark-in 0.9s var(--spring) both;
+}
+@keyframes mark-in {
+  0%   { opacity: 0; transform: scale(0.5) rotate(-30deg); }
+  60%  { opacity: 1; transform: scale(1.07) rotate(5deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+.splash__disc {
+  animation: vinyl-spin 3.4s linear infinite, mark-settle 1.5s var(--ease-out) both;
+}
+@keyframes mark-settle {
+  0%   { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.55), inset 0 0 22px rgba(0, 0, 0, 0.7); }
+  70%  { box-shadow: 0 0 0 26px rgba(168, 85, 247, 0), inset 0 0 22px rgba(0, 0, 0, 0.7); }
+  100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0), inset 0 0 22px rgba(0, 0, 0, 0.7); }
+}
+.splash__name { animation: fade-up 0.5s var(--ease-out) both 1.15s; }
+.splash__tag  { animation: fade-up 0.5s var(--ease-out) both 1.42s; }
+.splash__badge { animation: badge-in 0.62s var(--spring) both 2.15s; }
+.splash__url  { animation: fade-up 0.5s var(--ease-out) both 2.6s; }
+.splash__foot { animation: fade-up 0.5s var(--ease-out) both 3.05s; }
+.splash__hint { animation: hint-pulse 2.4s ease-in-out infinite 3.4s; }
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes badge-in {
+  0%   { opacity: 0; transform: scale(0.78); }
+  68%  { opacity: 1; transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); }
 }
