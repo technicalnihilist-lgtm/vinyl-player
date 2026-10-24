@@ -174,3 +174,11 @@ export const PaletteIcon = ({ size, ...p }: P) => (
     <circle cx="15.6" cy="9.2" r="1.15" fill="currentColor" stroke="none" />
   </svg>
 );
+
+export const MoreIcon = ({ size, ...p }: P) => (
+  <svg {...base(size)} {...p}>
+    <circle cx="12" cy="5.4" r="1.7" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="18.6" r="1.7" fill="currentColor" stroke="none" />
+  </svg>
+);

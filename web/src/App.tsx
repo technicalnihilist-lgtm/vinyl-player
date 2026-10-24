@@ -14,7 +14,8 @@ import { TransportControls } from './components/TransportControls';
 import { VolumeControl } from './components/VolumeControl';
 import { SettingsSheet } from './components/SettingsSheet';
 import { Splash } from './components/Splash';
-import { ChevronDownIcon, ExpandIcon, HeartIcon, PaletteIcon, SettingsIcon } from './components/Icons';
+import { ChevronDownIcon, HeartIcon } from './components/Icons';
+import { MoreMenu } from './components/MoreMenu';
 import { publishNowPlaying, onMediaAction } from './services/nowPlaying';
 
 export default function App() {
@@ -151,32 +152,16 @@ export default function App() {
           <span className="topbar__artist">{currentTrack?.artist ?? 'Offline player'}</span>
         </div>
 
-        <button
-          type="button"
-          className="glass-pill"
-          aria-label="Style"
-          aria-expanded={settingsOpen}
-          onClick={() => {
+        {/* Style, settings and fullscreen now live in one overflow menu, so the
+            topbar has room for the title again. */}
+        <MoreMenu
+          onStyle={() => {
             setFocusStyle(true);
             setSettingsOpen(true);
           }}
-        >
-          <PaletteIcon size={18} />
-        </button>
-
-        <button
-          type="button"
-          className="glass-pill"
-          aria-label="Settings"
-          aria-expanded={settingsOpen}
-          onClick={() => setSettingsOpen(true)}
-        >
-          <SettingsIcon size={18} />
-        </button>
-
-        <button type="button" className="glass-pill" aria-label="Toggle fullscreen" onClick={toggleFullscreen}>
-          <ExpandIcon size={18} />
-        </button>
+          onSettings={() => setSettingsOpen(true)}
+          onFullscreen={toggleFullscreen}
+        />
       </header>
 
       <main className="stage">
