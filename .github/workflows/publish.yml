@@ -1,12 +1,15 @@
 name: Build and publish
 
-# Builds every platform, publishes the download site to GitHub Pages, and
-# attaches all the builds to a release when you push a tag like v43.0.
+# Builds every platform and attaches the results to a release when you push a
+# tag like v43.0.
 #
 #   web-android  the web app, the PWA and the Android APK
-#   desktop      real installers for Windows, macOS and Linux (built on each OS)
-#   deploy       the download site -> GitHub Pages
+#   desktop      real installers for Windows, macOS and Linux, built on each OS
 #   release      every artefact -> the GitHub release
+#
+# The download site is served by GitHub Pages straight from docs/ on main
+# (Settings -> Pages -> Deploy from a branch -> main / docs), so it does not
+# need a job here.
 
 on:
   push:
@@ -16,11 +19,9 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages-${{ github.ref }}
+  group: build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -49,9 +50,9 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # Download the two SDK pieces the build needs directly. The
-      # android-actions/setup-android action was failing on the runner; this is
-      # the same two archives it would have fetched, and it cannot fail halfway.
+      # Fetch the two SDK pieces the build needs directly. The
+      # android-actions/setup-android action was failing on the runner before it
+      # downloaded anything; this is the same two archives it would have used.
       - name: Install the Android build-tools and platform
         run: |
           SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/android-sdk}}"
@@ -69,18 +70,11 @@ jobs:
         working-directory: android
         run: bash build.sh
 
-      - name: Put the APK on the download page
-        run: cp android/build/vinyl-player.apk docs/download/vinyl-player.apk
-
       - name: Keep the APK
         uses: actions/upload-artifact@v4
         with:
-          name: vinyl-player-apk
+          name: android-apk
           path: android/build/vinyl-player.apk
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs
 
   desktop:
     name: Desktop (${{ matrix.name }})
@@ -88,9 +82,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: Windows, os: windows-latest, target: win }
-          - { name: macOS, os: macos-latest, target: mac }
-          - { name: Linux, os: ubuntu-latest, target: linux }
+          # One arch per job: building both mac arches in a single job makes the
+          # second DMG fail, because the first one's volume is still mounted.
+          - { name: Windows, os: windows-latest, target: win, arch: x64 }
+          - { name: macOS Intel, os: macos-latest, target: mac, arch: x64 }
+          - { name: macOS Apple silicon, os: macos-latest, target: mac, arch: arm64 }
+          - { name: Linux, os: ubuntu-latest, target: linux, arch: x64 }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -116,26 +113,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: npx electron-builder --${{ matrix.target }} --publish never
+        run: npx electron-builder --${{ matrix.target }} --${{ matrix.arch }} --publish never
 
       - name: Keep the installers
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-${{ matrix.target }}
+          name: desktop-${{ matrix.target }}-${{ matrix.arch }}
           path: desktop/out/*
           if-no-files-found: warn
-
-  deploy:
-    name: Publish the download site
-    needs: web-android
-    if: github.ref == 'refs/heads/main' || github.ref_type == 'tag'
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
 
   release:
     name: Attach everything to a release
@@ -161,11 +146,11 @@ jobs:
             | Platform | File |
             |---|---|
             | **Android** | `vinyl-player.apk` — open it on the phone and allow "install unknown apps" |
-            | **Windows** | `Vinyl-Player-*-setup.exe` (installer) or `Vinyl-Player-*-portable.exe` (no install) |
-            | **macOS** | `Vinyl-Player-*.dmg` — drag it to Applications |
+            | **Windows** | `Vinyl Player Setup *.exe` (installer) or `Vinyl-Player-*-portable.exe` (no install) |
+            | **macOS** | `Vinyl-Player-*-x64.dmg` (Intel) or `*-arm64.dmg` (Apple silicon) — drag to Applications |
             | **Linux** | `Vinyl-Player-*-linux-*.tar.gz` — extract it and run `vinyl-player` |
-            | **iPhone / iPad** | Install the web app: open the download page in Safari → Share → **Add to Home Screen** |
+            | **iPhone / iPad** | Open the download page in Safari → Share → **Add to Home Screen** |
             | **Any modern browser** | Use the download page — it installs as an app and works offline |
 
-            Everything runs offline. The app asks for no network permission on Android
-            and makes no network requests anywhere.
+            Everything runs offline. The Android app asks for no network permission and
+            makes no network requests anywhere.
