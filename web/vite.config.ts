@@ -6,6 +6,11 @@ export default defineConfig({
   // The version the app shows in Settings, so it can be checked against GitHub.
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   base: './',
+  server: {
+    cors: process.env.DEV_PREVIEW_CORS_SUFFIX
+      ? { origin: new RegExp('^https?://[^/]+\\.' + process.env.DEV_PREVIEW_CORS_SUFFIX.replace(/\./g, '\\.') + '(?::\\d+)?$') }
+      : undefined,
+  },
   plugins: [react()],
   build: {
     outDir: 'dist',

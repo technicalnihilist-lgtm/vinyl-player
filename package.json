@@ -1,5 +1,5 @@
 {
-  "name": "vinyl-player",
+  "name": "vinyl-player-repo",
   "version": "60.0.0",
   "private": true,
   "description": "A Liquid Glass music player for the songs already on your phone. Fully offline — built without the INTERNET permission.",
@@ -22,5 +22,8 @@
     "android": "bash android/build.sh",
     "android:aab": "bash android/build-aab.sh"
   },
-  "//": "The app itself lives in web/ (React + Vite, wrapped by the Android shell in android/) and desktop/ (Electron). This file is the repository root: metadata and convenience scripts, nothing that changes how web/ installs."
+  "//": "The app itself lives in web/ (React + Vite, wrapped by the Android shell in android/) and desktop/ (Electron). This file is the repository root: metadata and convenience scripts, nothing that changes how web/ installs.",
+  "workspaces": [
+    "web"
+  ]
 }
