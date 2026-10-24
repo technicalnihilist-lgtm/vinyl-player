@@ -2,15 +2,25 @@ package com.hubclue.vinylplayer;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.ContentUris;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.Insets;
+import android.media.MediaMetadata;
 import android.media.MediaMetadataRetriever;
+import android.media.session.MediaSession;
+import android.media.session.PlaybackState;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -69,6 +79,32 @@ public class MainActivity extends Activity {
     private volatile String libraryJson = "{\"permission\":\"unknown\",\"scanning\":true,\"tracks\":[]}";
     private final LruCache<String, byte[]> artCache = new LruCache<>(64);
 
+    // ------------------------------------------------------- now playing card
+    // Android has no Dynamic Island — that is an iPhone feature. The system's
+    // own equivalent is a MediaSession plus a media notification, which is what
+    // shows on the lock screen, in the notification shade, in the quick-settings
+    // media player, and in the control centre Xiaomi, Realme and Honor build on
+    // top of it.
+    private static final String CHANNEL_ID = "vinyl.playback";
+    private static final int NOTIFICATION_ID = 4711;
+    private static final int REQ_NOTIFICATIONS = 1002;
+    private MediaSession session;
+    private String npTitle = "";
+    private String npArtist = "";
+    private String npAlbum = "";
+    private boolean npPlaying = false;
+    private long npPositionMs = 0;
+    private long npDurationMs = 0;
+    private final BroadcastReceiver mediaReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (action != null) {
+                sendToPage(action);
+            }
+        }
+    };
+
     // ------------------------------------------------------------------ setup
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,6 +135,7 @@ public class MainActivity extends Activity {
         // to the stylesheet, which pads the layout by exactly that much.
         applyEdgeToEdge();
         watchSystemBars();
+        setupNowPlaying();
 
         requestHighRefreshRate();
 
@@ -140,6 +177,15 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (session != null) {
+            session.setActive(false);
+            session.release();
+        }
+        try {
+            unregisterReceiver(mediaReceiver);
+        } catch (IllegalArgumentException ignored) {
+            // never registered, or already gone
+        }
         if (web != null) {
             web.removeJavascriptInterface("AndroidBridge");
             web.destroy();
@@ -233,6 +279,146 @@ public class MainActivity extends Activity {
             return insets.consumeSystemWindowInsets();
         });
         web.requestApplyInsets();
+    }
+
+    // ---------------------------------------------------------- now playing
+    /** The session the system media controls are attached to. */
+    private void setupNowPlaying() {
+        session = new MediaSession(this, "VinylPlayer");
+        session.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS
+                | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
+        session.setCallback(new MediaSession.Callback() {
+            @Override
+            public void onPlay() {
+                sendToPage("play");
+            }
+
+            @Override
+            public void onPause() {
+                sendToPage("pause");
+            }
+
+            @Override
+            public void onSkipToNext() {
+                sendToPage("next");
+            }
+
+            @Override
+            public void onSkipToPrevious() {
+                sendToPage("previous");
+            }
+
+            @Override
+            public void onStop() {
+                sendToPage("pause");
+            }
+        });
+        session.setActive(true);
+
+        if (Build.VERSION.SDK_INT >= 26) {
+            NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            NotificationChannel ch = new NotificationChannel(
+                    CHANNEL_ID, "Now playing", NotificationManager.IMPORTANCE_LOW);
+            ch.setDescription("The song that is playing");
+            ch.setShowBadge(false);
+            nm.createNotificationChannel(ch);
+        }
+
+        // The buttons on the media card come back here, then straight into the page.
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("com.hubclue.vinylplayer.PLAY");
+        filter.addAction("com.hubclue.vinylplayer.PAUSE");
+        filter.addAction("com.hubclue.vinylplayer.NEXT");
+        filter.addAction("com.hubclue.vinylplayer.PREV");
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(mediaReceiver, filter, RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(mediaReceiver, filter);
+        }
+    }
+
+    /** Calls back into the page so the media buttons drive the real player. */
+    private void sendToPage(String action) {
+        runOnUiThread(() -> web.evaluateJavascript(
+                "window.vinylNative && window.vinylNative.mediaAction"
+                        + " && window.vinylNative.mediaAction('" + action + "')", null));
+    }
+
+    private PendingIntent actionIntent(String action) {
+        Intent i = new Intent("com.hubclue.vinylplayer." + action);
+        i.setPackage(getPackageName());
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= 23) {
+            flags |= PendingIntent.FLAG_IMMUTABLE;
+        }
+        return PendingIntent.getBroadcast(this, action.hashCode(), i, flags);
+    }
+
+    /**
+     * Build the card from whatever the page last told us. Called on every track
+     * change and every play/pause, so the system controls always match the app.
+     */
+    private void publishNowPlaying() {
+        MediaMetadata.Builder meta = new MediaMetadata.Builder()
+                .putString(MediaMetadata.METADATA_KEY_TITLE, npTitle)
+                .putString(MediaMetadata.METADATA_KEY_ARTIST, npArtist)
+                .putString(MediaMetadata.METADATA_KEY_ALBUM, npAlbum)
+                .putLong(MediaMetadata.METADATA_KEY_DURATION, Math.max(0, npDurationMs));
+        session.setMetadata(meta.build());
+
+        session.setPlaybackState(new PlaybackState.Builder()
+                .setActions(PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE
+                        | PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_SKIP_TO_NEXT
+                        | PlaybackState.ACTION_SKIP_TO_PREVIOUS | PlaybackState.ACTION_SEEK_TO)
+                .setState(npPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
+                        Math.max(0, npPositionMs), npPlaying ? 1f : 0f)
+                .build());
+
+        if (Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission("android.permission.POST_NOTIFICATIONS")
+                != PackageManager.PERMISSION_GRANTED) {
+            // Ask the first time something is actually playing, which is the
+            // moment the card becomes useful.
+            if (npPlaying) {
+                requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},
+                        REQ_NOTIFICATIONS);
+            }
+            return;
+        }
+
+        Notification.Builder b = Build.VERSION.SDK_INT >= 26
+                ? new Notification.Builder(this, CHANNEL_ID)
+                : new Notification.Builder(this);
+        // Resolved by name rather than through R: this project compiles its Java
+        // with javac before aapt2 has generated R, so R is not on the classpath.
+        int smallIcon = getResources().getIdentifier("ic_note", "drawable", getPackageName());
+        if (smallIcon == 0) {
+            smallIcon = getApplicationInfo().icon;
+        }
+        b.setSmallIcon(smallIcon)
+                .setContentTitle(npTitle.isEmpty() ? "Vinyl Player" : npTitle)
+                .setContentText(npArtist.isEmpty() ? "" : npArtist)
+                .setSubText(npAlbum.isEmpty() ? null : npAlbum)
+                .setOngoing(npPlaying)
+                .setOnlyAlertOnce(true)
+                .setShowWhen(false)
+                .setVisibility(Notification.VISIBILITY_PUBLIC)
+                .setContentIntent(PendingIntent.getActivity(this, 0,
+                        new Intent(this, MainActivity.class),
+                        (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0)
+                                | PendingIntent.FLAG_UPDATE_CURRENT))
+                .addAction(new Notification.Action.Builder(null, "Previous",
+                        actionIntent("PREV")).build())
+                .addAction(new Notification.Action.Builder(null, npPlaying ? "Pause" : "Play",
+                        actionIntent(npPlaying ? "PAUSE" : "PLAY")).build())
+                .addAction(new Notification.Action.Builder(null, "Next",
+                        actionIntent("NEXT")).build())
+                .setStyle(new Notification.MediaStyle()
+                        .setMediaSession(session.getSessionToken())
+                        .setShowActionsInCompactView(0, 1, 2));
+
+        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        nm.notify(NOTIFICATION_ID, b.build());
     }
 
     // ------------------------------------------------------------ permissions
@@ -385,6 +571,27 @@ public class MainActivity extends Activity {
                     requestPermissions(new String[]{audioPermission()}, REQ_AUDIO);
                 }
             });
+        }
+
+        /**
+         * Called by the page whenever the song or the play state changes. The
+         * payload is the same shape the player already uses: title, artist,
+         * album, playing, position and duration.
+         */
+        @JavascriptInterface
+        public void nowPlaying(String json) {
+            try {
+                JSONObject o = new JSONObject(json);
+                npTitle = o.optString("title", "");
+                npArtist = o.optString("artist", "");
+                npAlbum = o.optString("album", "");
+                npPlaying = o.optBoolean("playing", false);
+                npPositionMs = o.optLong("position", 0);
+                npDurationMs = o.optLong("duration", 0);
+            } catch (Exception e) {
+                return;
+            }
+            runOnUiThread(MainActivity.this::publishNowPlaying);
         }
 
         @JavascriptInterface
