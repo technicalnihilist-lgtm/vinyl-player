@@ -49,7 +49,7 @@ are in **[docs/PLATFORMS.md](docs/PLATFORMS.md)**.
    file manager.
 3. Open it and allow **music access** when asked. Your songs appear.
 
-Requires **Android 5.0 (API 21) or newer**. Version 43.0, about 420 KB.
+Requires **Android 5.0 (API 21) or newer**. Version 43.0, under 1 MB.
 
 ---
 
