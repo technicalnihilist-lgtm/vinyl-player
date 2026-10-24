@@ -49,10 +49,21 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK packages
-        run: sdkmanager --install "platforms;android-34" "build-tools;34.0.0"
+      # Download the two SDK pieces the build needs directly. The
+      # android-actions/setup-android action was failing on the runner; this is
+      # the same two archives it would have fetched, and it cannot fail halfway.
+      - name: Install the Android build-tools and platform
+        run: |
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/android-sdk}}"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          mkdir -p "$SDK/build-tools" "$SDK/platforms"
+          curl -sSL --retry 3 -o /tmp/bt.zip https://dl.google.com/android/repository/build-tools_r34-linux.zip
+          unzip -q -o /tmp/bt.zip -d "$SDK/build-tools/"
+          curl -sSL --retry 3 -o /tmp/pf.zip https://dl.google.com/android/repository/platform-34-ext7_r03.zip
+          unzip -q -o /tmp/pf.zip -d "$SDK/platforms/"
+          echo "build-tools:"; ls "$SDK/build-tools"
+          echo "platforms:";   ls "$SDK/platforms"
+          ls "$SDK/platforms"/*/android.jar
 
       - name: Build the Android APK
         working-directory: android
@@ -152,7 +163,7 @@ jobs:
             | **Android** | `vinyl-player.apk` — open it on the phone and allow "install unknown apps" |
             | **Windows** | `Vinyl-Player-*-setup.exe` (installer) or `Vinyl-Player-*-portable.exe` (no install) |
             | **macOS** | `Vinyl-Player-*.dmg` — drag it to Applications |
-            | **Linux** | `Vinyl-Player-*.AppImage` — `chmod +x` it and run |
+            | **Linux** | `Vinyl-Player-*-linux-*.tar.gz` — extract it and run `vinyl-player` |
             | **iPhone / iPad** | Install the web app: open the download page in Safari → Share → **Add to Home Screen** |
             | **Any modern browser** | Use the download page — it installs as an app and works offline |
 
