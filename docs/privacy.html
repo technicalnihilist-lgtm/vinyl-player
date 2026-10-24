@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy Policy — Vinyl Player</title>
+    <meta name="description" content="Vinyl Player collects nothing. It has no network permission at all." />
+    <link rel="icon" href="./icon.png" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; padding: 56px 22px 96px;
+        font: 16px/1.72 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+        color: #d8dae4; background: #05060c;
+        background-image:
+          radial-gradient(90% 60% at 15% 0%, rgba(124,58,237,.30), transparent 60%),
+          radial-gradient(80% 60% at 100% 100%, rgba(56,189,248,.18), transparent 60%);
+        background-attachment: fixed;
+      }
+      main { max-width: 760px; margin: 0 auto; }
+      .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 40px; }
+      .brand img { width: 54px; height: 54px; border-radius: 15px; }
+      .brand b { color: #fff; font-size: 19px; letter-spacing: -.2px; }
+      h1 { color: #fff; font-size: 40px; line-height: 1.15; letter-spacing: -1px; margin: 0 0 10px; }
+      h2 { color: #fff; font-size: 20px; margin: 44px 0 12px; letter-spacing: -.2px; }
+      p, li { color: #b9bccb; }
+      .lede { font-size: 19px; color: #cfd2de; }
+      .card {
+        margin: 30px 0; padding: 24px 26px; border-radius: 20px;
+        background: linear-gradient(150deg, rgba(255,255,255,.09), rgba(255,255,255,.035));
+        border: 1px solid rgba(255,255,255,.13);
+      }
+      .card h2 { margin-top: 0; }
+      .big { color: #fff; font-size: 22px; font-weight: 700; }
+      ul { padding-left: 22px; }
+      li { margin: 7px 0; }
+      a { color: #c4a2ff; }
+      code { background: rgba(255,255,255,.08); padding: 2px 7px; border-radius: 6px; font-size: 14px; }
+      footer { margin-top: 60px; padding-top: 22px; border-top: 1px solid rgba(255,255,255,.1); color: #7c8093; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="brand">
+        <img src="./icon.png" alt="" />
+        <b>Vinyl Player</b>
+      </div>
+
+      <h1>Privacy Policy</h1>
+      <p class="lede">Last updated 24 October 2026 · applies to Vinyl Player <code>com.hubclue.vinylplayer</code></p>
+
+      <div class="card">
+        <h2>The short version</h2>
+        <p class="big">Vinyl Player collects nothing, sends nothing, and has no way to.</p>
+        <p>
+          The app is built without the <code>INTERNET</code> permission. It cannot open a network
+          connection even if it wanted to — Android will not allow it. Everything the app does
+          happens on your own device.
+        </p>
+      </div>
+
+      <h2>What the app collects</h2>
+      <p><b>Nothing.</b> Specifically:</p>
+      <ul>
+        <li>No account, and no sign-in of any kind.</li>
+        <li>No analytics, no crash reporting, no telemetry.</li>
+        <li>No advertising, and no advertising identifiers.</li>
+        <li>No location, no contacts, no camera, no microphone.</li>
+        <li>No device identifiers are read or stored.</li>
+      </ul>
+
+      <h2>The one permission it asks for</h2>
+      <p>
+        <code>READ_MEDIA_AUDIO</code> (on Android 13 and newer), or
+        <code>READ_EXTERNAL_STORAGE</code> (on Android 12 and older, limited to that use).
+      </p>
+      <p>
+        This is what lets the app show the music already on your phone. It is read-only: the app
+        never edits, moves, or deletes a file. Your songs, and the cover art inside them, are read
+        on the device and are never copied anywhere.
+      </p>
+      <p>If you deny it, the app simply shows an empty library. Nothing else changes.</p>
+
+      <h2>What stays on your device</h2>
+      <p>
+        Your settings (which switches you turned on) and your liked tracks are stored in the app's
+        own local storage on your device. They are never uploaded, and uninstalling the app removes
+        them.
+      </p>
+
+      <h2>Sharing</h2>
+      <p>
+        Nothing is shared with anyone, because nothing leaves the device. There are no third-party
+        SDKs in the app — no analytics, no ad networks, no crash reporters.
+      </p>
+
+      <h2>Children</h2>
+      <p>
+        The app is suitable for all ages. It collects no personal information from anyone, children
+        included.
+      </p>
+
+      <h2>Changes to this policy</h2>
+      <p>
+        If this ever changes, the new version will appear on this page with a new date. Since the app
+        cannot talk to a network, any change would have to arrive as an app update you choose to
+        install.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        Questions about this policy:
+        <a href="https://github.com/technicalnihilist-lgtm/vinyl-player/issues">open an issue on GitHub</a>.
+      </p>
+
+      <footer>
+        Vinyl Player is free and open source (MIT), by Raju. The source is at
+        <a href="https://github.com/technicalnihilist-lgtm/vinyl-player">github.com/technicalnihilist-lgtm/vinyl-player</a>.
+      </footer>
+    </main>
+  </body>
+</html>
