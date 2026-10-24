@@ -260,7 +260,7 @@
         <a class="link" href="#download">Download</a>
         <a class="link" href="#install">Install</a>
         <a class="link" href="https://github.com/technicalnihilist-lgtm/vinyl-player" target="_blank" rel="noopener">GitHub</a>
-        <a class="btn small" href="download/vinyl-player.apk" download>Download</a>
+        <a class="btn small" href="https://github.com/technicalnihilist-lgtm/vinyl-player/releases/latest/download/vinyl-player.apk">Download</a>
       </nav>
 
       <div class="shell">
@@ -273,7 +273,7 @@
               traffic.
             </p>
             <div class="cta">
-              <a class="btn" href="download/vinyl-player.apk" download>
+              <a class="btn" href="https://github.com/technicalnihilist-lgtm/vinyl-player/releases/latest/download/vinyl-player.apk">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11" /><path d="M7 11l5 5 5-5" /><path d="M5 20h14" /></svg>
                 Download the APK
               </a>
@@ -367,7 +367,7 @@
               <div class="ico">🤖</div>
               <h3>Android</h3>
               <p>The full app: it reads your phone's music library, cover art and all. Android 5.0+.</p>
-              <a class="btn small" style="margin-top:14px" href="download/vinyl-player.apk" download>Download APK</a>
+              <a class="btn small" style="margin-top:14px" href="https://github.com/technicalnihilist-lgtm/vinyl-player/releases/latest/download/vinyl-player.apk">Download APK</a>
             </div>
             <div class="card glass">
               <div class="ico">🪟</div>
@@ -427,7 +427,7 @@
             </li>
           </ol>
           <div class="cta" style="margin-top: 26px">
-            <a class="btn" href="download/vinyl-player.apk" download>Download Vinyl Player 50.0</a>
+            <a class="btn" href="https://github.com/technicalnihilist-lgtm/vinyl-player/releases/latest/download/vinyl-player.apk">Download Vinyl Player 50.0</a>
             <a class="btn ghost" href="https://github.com/technicalnihilist-lgtm/vinyl-player/releases/latest" target="_blank" rel="noopener">Or download from GitHub</a>
           </div>
           <p class="meta" style="margin-top: 14px">
@@ -471,5 +471,21 @@
         });
       })();
     </script>
-  </body>
+    <p id="download-fallback" style="display:none"></p>
+  <script>
+    // If the APK cannot be fetched from the site, send people to the release.
+    (function () {
+      var links = document.querySelectorAll('a[href$="vinyl-player.apk"]');
+      if (!links.length) return;
+      fetch(links[0].getAttribute('href'), { method: 'HEAD' }).catch(function () {
+        var note = document.getElementById('download-fallback');
+        if (note) {
+          note.style.display = 'block';
+          note.innerHTML = 'Direct download is unavailable — ' +
+            '<a href="https://github.com/technicalnihilist-lgtm/vinyl-player/releases/latest/download/vinyl-player.apk">get the APK from GitHub</a>.';
+        }
+      });
+    })();
+  </script>
+</body>
 </html>
