@@ -1,0 +1,12 @@
+# dependencies and build output
+node_modules/
+web/dist/
+android/build/
+android/assets/
+android/debug.keystore
+
+# scratch
+*.log
+*.tmp
+.DS_Store
+__pycache__/
