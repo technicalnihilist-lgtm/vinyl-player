@@ -26,8 +26,8 @@ embedded in each file. Requires Android 5.0 (API 21) or newer.
 
 ## Windows
 
-Run `Vinyl-Player-43.0.0-setup.exe` and follow the installer, or take
-`Vinyl-Player-43.0.0-portable.exe` if you would rather not install anything —
+Run `Vinyl-Player-50.0.0-setup.exe` and follow the installer, or take
+`Vinyl-Player-50.0.0-portable.exe` if you would rather not install anything —
 it runs straight from wherever you put it.
 
 The Windows build is not code-signed, so SmartScreen may show a "Windows
@@ -45,8 +45,8 @@ click, or *System Settings → Privacy & Security → Open Anyway*.
 ## Linux
 
 ```bash
-chmod +x Vinyl-Player-43.0.0.AppImage
-./Vinyl-Player-43.0.0.AppImage
+chmod +x Vinyl-Player-50.0.0.AppImage
+./Vinyl-Player-50.0.0.AppImage
 ```
 
 ## iPhone and iPad
