@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vinyl Player — your music, on a record that really turns</title>
+    <meta
+      name="description"
+      content="A liquid-glass music player that plays the songs already on your phone. Completely offline, no account, no ads. Download the APK."
+    />
+    <meta name="theme-color" content="#05060c" />
+    <link rel="icon" href="icon.png" />
+    <style>
+      :root {
+        --bg: #05060c;
+        --text: #f3f5fb;
+        --muted: rgba(240, 243, 252, 0.62);
+        --muted-2: rgba(240, 243, 252, 0.4);
+        --line: rgba(255, 255, 255, 0.16);
+        --glass: linear-gradient(150deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05) 42%, rgba(255, 255, 255, 0.11));
+        --shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+        --r: 26px;
+        --pill: 999px;
+        --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, 'SF Pro Display', 'Segoe UI', Inter, system-ui, 'Noto Sans SC', 'PingFang SC', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.6;
+        overflow-x: hidden;
+      }
+      a { color: inherit; }
+
+      /* ---------- drifting colour field ---------- */
+      .ambient {
+        position: fixed;
+        inset: -25%;
+        z-index: 0;
+        pointer-events: none;
+        overflow: hidden;
+      }
+      .ambient span {
+        position: absolute;
+        display: block;
+        border-radius: 50%;
+        filter: blur(56px);
+        opacity: 0.7;
+        transform: translateZ(0);
+        will-change: transform;
+      }
+      .ambient span:nth-child(1) {
+        width: 46%; height: 46%; left: 2%; top: 4%;
+        background: radial-gradient(circle at 40% 40%, rgba(124, 58, 237, 0.85), rgba(124, 58, 237, 0) 68%);
+        animation: d1 26s ease-in-out infinite alternate;
+      }
+      .ambient span:nth-child(2) {
+        width: 52%; height: 52%; right: -4%; top: 14%;
+        background: radial-gradient(circle at 60% 40%, rgba(37, 99, 235, 0.8), rgba(37, 99, 235, 0) 68%);
+        animation: d2 32s ease-in-out infinite alternate;
+      }
+      .ambient span:nth-child(3) {
+        width: 44%; height: 44%; left: 24%; bottom: -6%;
+        background: radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.7), rgba(236, 72, 153, 0) 68%);
+        animation: d3 29s ease-in-out infinite alternate;
+      }
+      @keyframes d1 { to { transform: translate3d(9%, 7%, 0) scale(1.16); } }
+      @keyframes d2 { to { transform: translate3d(-8%, 10%, 0) scale(1.1); } }
+      @keyframes d3 { to { transform: translate3d(7%, -9%, 0) scale(1.18); } }
+
+      .wrap { position: relative; z-index: 1; }
+      .shell { width: min(1160px, 100% - 40px); margin: 0 auto; }
+
+      /* ---------- glass ---------- */
+      .glass {
+        position: relative;
+        background: var(--glass);
+        box-shadow: var(--shadow), 0 0 44px rgba(255, 255, 255, 0.06),
+          inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 rgba(255, 255, 255, 0.14);
+      }
+      .glass::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        padding: 1.25px;
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.28) 20%, rgba(255, 255, 255, 0.08) 52%, rgba(255, 255, 255, 0.55) 100%);
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        mask-composite: exclude;
+        pointer-events: none;
+      }
+
+      /* ---------- nav ---------- */
+      nav {
+        position: sticky;
+        top: 14px;
+        z-index: 20;
+        margin: 14px auto 0;
+        width: min(1160px, 100% - 28px);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 9px 10px 9px 16px;
+        border-radius: var(--pill);
+        border: 1px solid var(--line);
+        background: linear-gradient(160deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.07));
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+      }
+      nav img { width: 34px; height: 34px; border-radius: 10px; }
+      nav .name { font-weight: 650; letter-spacing: 0.2px; }
+      nav .spacer { flex: 1; }
+      nav a.link { color: var(--muted); text-decoration: none; font-size: 14.5px; padding: 6px 10px; border-radius: var(--pill); }
+      nav a.link:hover { color: #fff; background: rgba(255, 255, 255, 0.12); }
+
+      /* ---------- buttons ---------- */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 26px;
+        border-radius: var(--pill);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        background: linear-gradient(150deg, #ffffff, rgba(255, 255, 255, 0.85));
+        color: #0a0a12;
+        font-weight: 650;
+        font-size: 16px;
+        text-decoration: none;
+        box-shadow: 0 16px 34px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        transition: transform 0.34s var(--ease), box-shadow 0.3s ease;
+      }
+      .btn:hover { transform: translateY(-2px) scale(1.02); }
+      .btn:active { transform: scale(0.96); }
+      .btn.small { padding: 10px 18px; font-size: 14.5px; }
+      .btn.ghost {
+        background: linear-gradient(160deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08));
+        color: #fff;
+        border-color: var(--line);
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+      }
+
+      /* ---------- hero ---------- */
+      .hero {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 46px;
+        align-items: center;
+        padding: 76px 0 40px;
+      }
+      .hero h1 {
+        margin: 0;
+        font-size: clamp(34px, 5vw, 62px);
+        line-height: 1.05;
+        letter-spacing: -1.4px;
+        font-weight: 700;
+      }
+      .hero h1 em {
+        font-style: normal;
+        background: linear-gradient(100deg, #c084fc, #60a5fa 55%, #22d3ee);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .hero p.lede { margin: 20px 0 0; font-size: 17.5px; color: var(--muted); max-width: 46ch; }
+      .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 30px; }
+      .meta { margin-top: 16px; font-size: 13px; color: var(--muted-2); }
+      .meta b { color: var(--muted); font-weight: 600; }
+
+      /* ---------- phone ---------- */
+      .phone {
+        position: relative;
+        width: min(340px, 82vw);
+        margin: 0 auto;
+        aspect-ratio: 412 / 824;
+        border-radius: 42px;
+        padding: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        background: linear-gradient(160deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+        box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        animation: float 8s ease-in-out infinite;
+      }
+      .phone img { width: 100%; height: 100%; object-fit: cover; border-radius: 33px; display: block; }
+      @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+
+      /* ---------- sections ---------- */
+      section { padding: 46px 0; }
+      h2 { font-size: clamp(24px, 3vw, 36px); letter-spacing: -0.6px; margin: 0 0 8px; font-weight: 680; }
+      .sub { color: var(--muted); margin: 0 0 28px; font-size: 16px; }
+
+      .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+      .card { padding: 26px 24px; border-radius: var(--r); }
+      .card .ico {
+        width: 46px; height: 46px; border-radius: 15px; display: grid; place-items: center;
+        background: linear-gradient(150deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.08));
+        border: 1px solid rgba(255, 255, 255, 0.24);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        font-size: 22px; margin-bottom: 14px;
+      }
+      .card h3 { margin: 0 0 6px; font-size: 17px; font-weight: 640; }
+      .card p { margin: 0; color: var(--muted); font-size: 14.5px; }
+
+      .shots { display: flex; gap: 18px; overflow-x: auto; padding: 6px 4px 22px; scroll-snap-type: x mandatory; }
+      .shots::-webkit-scrollbar { height: 8px; }
+      .shots::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 999px; }
+      .shots img {
+        width: 236px; border-radius: 22px; flex: 0 0 auto; scroll-snap-align: center;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        box-shadow: 0 22px 44px rgba(0, 0, 0, 0.5);
+        transition: transform 0.4s var(--ease);
+      }
+      .shots img:hover { transform: translateY(-8px) scale(1.02); }
+
+      ol.steps { list-style: none; counter-reset: s; padding: 0; margin: 0; display: grid; gap: 14px; }
+      ol.steps li { counter-increment: s; display: flex; gap: 16px; align-items: flex-start; padding: 20px 22px; border-radius: var(--r); }
+      ol.steps li::before {
+        content: counter(s);
+        flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%;
+        display: grid; place-items: center; font-weight: 700; font-size: 15px;
+        background: linear-gradient(150deg, rgba(168, 85, 247, 0.75), rgba(59, 130, 246, 0.6));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+      }
+      ol.steps b { display: block; font-weight: 640; }
+      ol.steps span { color: var(--muted); font-size: 14.5px; }
+
+      footer { padding: 40px 0 60px; color: var(--muted-2); font-size: 13.5px; text-align: center; }
+      footer a { color: var(--muted); }
+
+      @media (max-width: 900px) {
+        .hero { grid-template-columns: 1fr; gap: 34px; padding-top: 44px; text-align: center; }
+        .hero p.lede { margin-left: auto; margin-right: auto; }
+        .cta { justify-content: center; }
+        .cards { grid-template-columns: 1fr 1fr; }
+        nav a.link { display: none; }
+      }
+      @media (max-width: 600px) {
+        .cards { grid-template-columns: 1fr; }
+        .shell { width: min(1160px, 100% - 28px); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .ambient span, .phone { animation: none; }
+        html { scroll-behavior: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="ambient" aria-hidden="true"><span></span><span></span><span></span></div>
+
+    <div class="wrap">
+      <nav class="glass">
+        <img src="icon.png" alt="Vinyl Player icon" />
+        <span class="name">Vinyl Player</span>
+        <span class="spacer"></span>
+        <a class="link" href="#features">Features</a>
+        <a class="link" href="#screens">Screenshots</a>
+        <a class="link" href="#install">Install</a>
+        <a class="btn small" href="download/vinyl-player.apk" download>Download</a>
+      </nav>
+
+      <div class="shell">
+        <section class="hero">
+          <div>
+            <h1>Your music, on a record that <em>really turns.</em></h1>
+            <p class="lede">
+              A liquid-glass player for the songs already on your phone. It reads your own library — including the
+              cover art inside each file — and nothing else. No account, no ads, and not a single byte of network
+              traffic.
+            </p>
+            <div class="cta">
+              <a class="btn" href="download/vinyl-player.apk" download>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11" /><path d="M7 11l5 5 5-5" /><path d="M5 20h14" /></svg>
+                Download the APK
+              </a>
+              <a class="btn ghost" href="#screens">See screenshots</a>
+            </div>
+            <p class="meta">
+              <b>Version 43.0</b> · 414 KB · Android 5.0 and up · free, no ads
+            </p>
+          </div>
+
+          <div class="phone">
+            <img src="screenshots/03-now-playing.jpg" alt="The Vinyl Player now-playing screen" />
+          </div>
+        </section>
+
+        <section id="features">
+          <h2>Everything a record player should be</h2>
+          <p class="sub">Small, quick, and completely yours.</p>
+          <div class="cards">
+            <div class="card glass">
+              <div class="ico">🔌</div>
+              <h3>100% offline</h3>
+              <p>The app asks for no network permission at all. It cannot phone home, because it has no way to.</p>
+            </div>
+            <div class="card glass">
+              <div class="ico">🎵</div>
+              <h3>Your own library</h3>
+              <p>Reads the music already on your device through Android's media library. Nothing is bundled or downloaded.</p>
+            </div>
+            <div class="card glass">
+              <div class="ico">🖼️</div>
+              <h3>Real album art</h3>
+              <p>The cover art embedded in your files appears on the record label and beside every song.</p>
+            </div>
+            <div class="card glass">
+              <div class="ico">🫧</div>
+              <h3>Liquid Glass</h3>
+              <p>Translucent panels with specular edges, a drifting colour field, and controls that answer your touch.</p>
+            </div>
+            <div class="card glass">
+              <div class="ico">⚡</div>
+              <h3>Smooth at 120 Hz</h3>
+              <p>Built to run at your screen's refresh rate, with the visualiser reacting to the real audio.</p>
+            </div>
+            <div class="card glass">
+              <div class="ico">🎛️</div>
+              <h3>Make it yours</h3>
+              <p>Six sliding switches — spin the record, show the visualiser, numbers, compact rows, auto-play and the glass effects.</p>
+            </div>
+            <div class="card glass">
+              <div class="ico">💿</div>
+              <h3>A record that turns</h3>
+              <p>It spins while the music plays and freezes the moment you pause — and it never stutters.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="screens">
+          <h2>Screenshots</h2>
+          <p class="sub">Swipe through — everything here runs offline.</p>
+          <div class="shots">
+            <img src="screenshots/01-your-library.jpg" alt="Library" />
+            <img src="screenshots/03-now-playing.jpg" alt="Now playing" />
+            <img src="screenshots/10-liked-filter.jpg" alt="Liked songs" />
+            <img src="screenshots/14-vinyl-focus.jpg" alt="Vinyl focus" />
+            <img src="screenshots/12-search.jpg" alt="Search your playlist" />
+            <img src="screenshots/33-empty-permission.jpg" alt="Permission prompt" />
+            <img src="screenshots/28-vinyl-that-spins.jpg" alt="Vinyl" />
+            <img src="screenshots/25-offline.jpg" alt="Offline" />
+            <img src="screenshots/41-settings.jpg" alt="Settings" />
+          </div>
+        </section>
+
+        <section id="install">
+          <h2>Install it in a minute</h2>
+          <p class="sub">It is a normal Android app. Sideload it and you are done.</p>
+          <ol class="steps">
+            <li class="glass">
+              <div>
+                <b>Download the APK</b>
+                <span>Tap the download button and save <code>vinyl-player.apk</code> to your phone.</span>
+              </div>
+            </li>
+            <li class="glass">
+              <div>
+                <b>Allow installing from this source</b>
+                <span>Android will ask once — open Settings and turn on "Install unknown apps" for your browser or file manager.</span>
+              </div>
+            </li>
+            <li class="glass">
+              <div>
+                <b>Open it and allow music access</b>
+                <span>The app asks for your music library on first launch. Say yes and your songs appear.</span>
+              </div>
+            </li>
+          </ol>
+          <div class="cta" style="margin-top: 26px">
+            <a class="btn" href="download/vinyl-player.apk" download>Download Vinyl Player 43.0</a>
+          </div>
+        </section>
+      </div>
+
+      <footer>
+        <p>
+          Vinyl Player 43.0 · plays the music on your device · no account, no ads, no network.<br />
+          Built as a single offline app. If a song is missing, make sure Android's media scanner has indexed it.
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>
