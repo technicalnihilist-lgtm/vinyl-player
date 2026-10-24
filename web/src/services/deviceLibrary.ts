@@ -141,9 +141,14 @@ export function openAppSettings(): void {
  */
 export function onDeviceLibraryChanged(handler: () => void): () => void {
   if (!hasDeviceLibrary()) return () => undefined;
-  const w = window as unknown as { vinylNative?: { refresh: () => void } };
-  w.vinylNative = { refresh: handler };
+  // The shell keeps one object on window.vinylNative. Merge into it rather than
+  // replacing it — replacing would drop the media-button handler the now-playing
+  // card registers, and the two features would take turns working.
+  const w = window as unknown as { vinylNative?: Record<string, unknown> };
+  w.vinylNative = { ...(w.vinylNative ?? {}), refresh: handler };
   return () => {
-    delete w.vinylNative;
+    if (w.vinylNative && w.vinylNative.refresh === handler) {
+      delete w.vinylNative.refresh;
+    }
   };
 }

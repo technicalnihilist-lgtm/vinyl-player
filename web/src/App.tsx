@@ -14,13 +14,17 @@ import { TransportControls } from './components/TransportControls';
 import { VolumeControl } from './components/VolumeControl';
 import { SettingsSheet } from './components/SettingsSheet';
 import { Splash } from './components/Splash';
-import { ChevronDownIcon, ExpandIcon, HeartIcon, SettingsIcon } from './components/Icons';
+import { ChevronDownIcon, ExpandIcon, HeartIcon, PaletteIcon, SettingsIcon } from './components/Icons';
+import { publishNowPlaying, onMediaAction } from './services/nowPlaying';
 
 export default function App() {
   const { state, engine, currentTrack, actions, library } = usePlayer();
   const reducedMotion = useReducedMotion();
   const { settings, toggle: toggleSetting, reset: resetSettings } = useSettings();
   const { style, update: updateStyle, reset: resetStyle } = useStyle();
+  // Opening the sheet from the palette button should land on the Style section,
+  // not leave the user scrolling past six switches to find it.
+  const [focusStyle, setFocusStyle] = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -84,6 +88,42 @@ export default function App() {
   // UI without re-rendering the tree.
   const vars = useMemo(() => styleVars(style, currentTrack?.palette[1]), [style, currentTrack?.palette]);
 
+  // Keep the system's now-playing card in step with the player. Only track
+  // changes and play/pause are pushed: the media card extrapolates the position
+  // itself, so there is nothing to gain from a call every second.
+  useEffect(() => {
+    publishNowPlaying({
+      title: currentTrack?.title ?? '',
+      artist: currentTrack?.artist ?? '',
+      album: currentTrack?.album ?? '',
+      playing: state.isPlaying,
+      position: Math.round(state.currentTime * 1000),
+      duration: Math.round(state.duration * 1000),
+    });
+  }, [currentTrack?.id, currentTrack?.title, currentTrack?.artist, currentTrack?.album,
+      state.isPlaying, state.currentTime, state.duration]);
+
+  // The buttons on the media card drive the real player.
+  useEffect(
+    () =>
+      onMediaAction((action) => {
+        if (action === 'play') actions.play();
+        else if (action === 'pause') actions.pause();
+        else if (action === 'next') actions.next();
+        else if (action === 'previous') actions.prev();
+      }),
+    [actions],
+  );
+
+  // Bring the Style section into view once the sheet has finished sliding up.
+  useEffect(() => {
+    if (!settingsOpen || !focusStyle) return undefined;
+    const t = window.setTimeout(() => {
+      document.querySelector('.sheet .style')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }, 360);
+    return () => window.clearTimeout(t);
+  }, [settingsOpen, focusStyle]);
+
   return (
     <div
       className={`app${panelOpen ? '' : ' app--collapsed'}${reducedMotion || !settings.glass ? ' app--calm' : ''}`}
@@ -110,6 +150,19 @@ export default function App() {
           <span className="topbar__title">{currentTrack?.title ?? 'Your music'}</span>
           <span className="topbar__artist">{currentTrack?.artist ?? 'Offline player'}</span>
         </div>
+
+        <button
+          type="button"
+          className="glass-pill"
+          aria-label="Style"
+          aria-expanded={settingsOpen}
+          onClick={() => {
+            setFocusStyle(true);
+            setSettingsOpen(true);
+          }}
+        >
+          <PaletteIcon size={18} />
+        </button>
 
         <button
           type="button"
@@ -231,7 +284,10 @@ export default function App() {
         style={style}
         onStyleChange={updateStyle}
         onStyleReset={resetStyle}
-        onClose={() => setSettingsOpen(false)}
+        onClose={() => {
+          setSettingsOpen(false);
+          setFocusStyle(false);
+        }}
       />
 
       <input

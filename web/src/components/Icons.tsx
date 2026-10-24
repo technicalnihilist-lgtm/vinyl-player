@@ -165,3 +165,12 @@ export const MusicNoteIcon = ({ size, ...p }: P) => (
     <circle cx="16.5" cy="15.5" r="2.5" />
   </svg>
 );
+
+export const PaletteIcon = ({ size, ...p }: P) => (
+  <svg {...base(size)} {...p}>
+    <path d="M12 3.2a8.8 8.8 0 0 0 0 17.6c1.2 0 1.9-.8 1.9-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.7 1.7-1.7h1.1a4.4 4.4 0 0 0 4.4-4.4c0-4-3.7-7.4-8.1-7.4z" />
+    <circle cx="8.2" cy="10.4" r="1.15" fill="currentColor" stroke="none" />
+    <circle cx="11.6" cy="7.7" r="1.15" fill="currentColor" stroke="none" />
+    <circle cx="15.6" cy="9.2" r="1.15" fill="currentColor" stroke="none" />
+  </svg>
+);
