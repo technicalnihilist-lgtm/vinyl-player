@@ -2320,3 +2320,13 @@ select {
   background: transparent;
   cursor: default;
 }
+
+/* the version line at the foot of the settings sheet — the number to compare
+   with what is on GitHub */
+.sheet__version {
+  margin: 14px 0 0;
+  text-align: center;
+  font-size: 12.5px;
+  color: rgba(240, 243, 252, 0.42);
+  font-variant-numeric: tabular-nums;
+}

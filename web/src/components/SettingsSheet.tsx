@@ -3,6 +3,7 @@ import type { Style } from '../hooks/useStyle';
 import { Switch } from './Switch';
 import { StylePanel } from './StylePanel';
 import { CloseIcon } from './Icons';
+import { APP_VERSION } from '../version';
 
 interface Props {
   open: boolean;
@@ -60,6 +61,10 @@ export function SettingsSheet({ open, settings, onToggle, onReset, style, onStyl
             Reset to defaults
           </button>
         </footer>
+
+        <p className="sheet__version">
+          Vinyl Player {APP_VERSION} · by Raju
+        </p>
       </div>
     </div>
   );

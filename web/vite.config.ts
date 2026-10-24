@@ -1,7 +1,10 @@
+import pkg from './package.json';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
+  // The version the app shows in Settings, so it can be checked against GitHub.
+  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   base: './',
   plugins: [react()],
   build: {
