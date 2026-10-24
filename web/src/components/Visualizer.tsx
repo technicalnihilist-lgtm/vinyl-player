@@ -3,7 +3,9 @@ import type { AudioEngine } from '../audio/engine';
 
 const BARS = 36;
 /** Never draw faster than this — a 120 Hz screen doesn't need 120 canvas paints. */
-const FRAME_MS = 1000 / 60;
+// 30fps. The bars are decoration; at 60 they cost a full canvas redraw
+// every frame for a difference nobody can see.
+const FRAME_MS = 1000 / 30;
 /** Below this, the bars are invisible, so there is nothing worth painting. */
 const SILENT = 0.006;
 
@@ -172,7 +174,7 @@ export function Visualizer({ engine, isPlaying, reducedMotion }: Props) {
     } else {
       const loop = (t: number) => {
         raf = requestAnimationFrame(loop);
-        if (t - lastDraw < FRAME_MS - 1) return; // throttle to 60 fps
+        if (t - lastDraw < FRAME_MS - 1) return; // throttle to 30 fps
         lastDraw = t;
         step();
       };
