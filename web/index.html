@@ -3,11 +3,39 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Vinyl Player — your music, on a record that really turns</title>
+    <meta
+      name="description"
+      content="A liquid-glass music player for the songs already on your device. Works offline, no account, no ads. Installable on Windows, macOS, Android, iOS and iPadOS."
+    />
+
+    <!-- installable app (Windows, macOS, Android, iPadOS, iOS) -->
+    <link rel="manifest" href="./manifest.webmanifest" />
     <meta name="theme-color" content="#05060c" />
-    <title>Vinyl · Arijit Singh — Mandarin Singles</title>
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="./icons/favicon.png" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+
+    <!-- iOS / iPadOS: run full-screen from the home screen, not in Safari -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Vinyl" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- Windows / Edge: show up nicely in the taskbar and Start -->
+    <meta name="application-name" content="Vinyl Player" />
+    <meta name="msapplication-TileColor" content="#05060c" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Register the offline shell. Failure is fine — the app still runs.
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('./sw.js').catch(function () {});
+        });
+      }
+    </script>
   </body>
 </html>

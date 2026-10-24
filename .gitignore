@@ -4,6 +4,9 @@ web/dist/
 android/build/
 android/assets/
 android/debug.keystore
+desktop/app/
+desktop/out/
+desktop/node_modules/
 
 # scratch
 *.log

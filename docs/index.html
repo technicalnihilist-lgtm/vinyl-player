@@ -257,6 +257,7 @@
         <span class="spacer"></span>
         <a class="link" href="#features">Features</a>
         <a class="link" href="#screens">Screenshots</a>
+        <a class="link" href="#download">Download</a>
         <a class="link" href="#install">Install</a>
         <a class="link" href="https://github.com/technicalnihilist-lgtm/vinyl-player" target="_blank" rel="noopener">GitHub</a>
         <a class="btn small" href="download/vinyl-player.apk" download>Download</a>
@@ -350,8 +351,52 @@
           </div>
         </section>
 
+<section id="download">
+          <h2>Download for your device</h2>
+          <p class="sub">One player, a build for every platform — and every one of them runs offline.</p>
+          <div class="cards">
+            <div class="card glass">
+              <div class="ico">🤖</div>
+              <h3>Android</h3>
+              <p>The full app: it reads your phone's music library, cover art and all. Android 5.0+.</p>
+              <a class="btn small" style="margin-top:14px" href="download/vinyl-player.apk" download>Download APK</a>
+            </div>
+            <div class="card glass">
+              <div class="ico">🪟</div>
+              <h3>Windows</h3>
+              <p>A proper installer, or a portable <code>.exe</code> if you would rather not install anything.</p>
+              <a class="btn small ghost" style="margin-top:14px" href="https://github.com/technicalnihilist-lgtm/vinyl-player/releases/latest" target="_blank" rel="noopener">Get for Windows</a>
+            </div>
+            <div class="card glass">
+              <div class="ico">🍎</div>
+              <h3>macOS</h3>
+              <p>A <code>.dmg</code> for Intel and Apple silicon. Drag it to Applications and you are done.</p>
+              <a class="btn small ghost" style="margin-top:14px" href="https://github.com/technicalnihilist-lgtm/vinyl-player/releases/latest" target="_blank" rel="noopener">Get for macOS</a>
+            </div>
+            <div class="card glass">
+              <div class="ico">📱</div>
+              <h3>iPhone &amp; iPad</h3>
+              <p>Open this page in <b>Safari</b>, tap Share, then <b>Add to Home Screen</b>. It becomes a real
+                full-screen app with its own icon, and works offline.</p>
+              <button class="btn small ghost" id="install-app" style="margin-top:14px" hidden>Install this app</button>
+            </div>
+            <div class="card glass">
+              <div class="ico">🐧</div>
+              <h3>Linux</h3>
+              <p>A single AppImage — make it executable and run it. No dependencies to chase.</p>
+              <a class="btn small ghost" style="margin-top:14px" href="https://github.com/technicalnihilist-lgtm/vinyl-player/releases/latest" target="_blank" rel="noopener">Get for Linux</a>
+            </div>
+            <div class="card glass">
+              <div class="ico">🌐</div>
+              <h3>Any browser</h3>
+              <p>This page is installable. In Chrome or Edge look for the install icon in the address bar —
+                you get its own window, a Start menu entry, and full offline support.</p>
+            </div>
+          </div>
+        </section>
+
         <section id="install">
-          <h2>Install it in a minute</h2>
+          <h2>Installing on Android</h2>
           <p class="sub">It is a normal Android app. Sideload it and you are done.</p>
           <ol class="steps">
             <li class="glass">
@@ -393,5 +438,30 @@
         </p>
       </footer>
     </div>
+
+    <script>
+      // Chrome/Edge: offer a real install from the page.
+      (function () {
+        var btn = document.getElementById('install-app');
+        if (!btn) return;
+        var deferred = null;
+        window.addEventListener('beforeinstallprompt', function (e) {
+          e.preventDefault();
+          deferred = e;
+          btn.hidden = false;
+        });
+        btn.addEventListener('click', function () {
+          if (!deferred) return;
+          deferred.prompt();
+          deferred.userChoice.finally(function () {
+            deferred = null;
+            btn.hidden = true;
+          });
+        });
+        window.addEventListener('appinstalled', function () {
+          btn.hidden = true;
+        });
+      })();
+    </script>
   </body>
 </html>

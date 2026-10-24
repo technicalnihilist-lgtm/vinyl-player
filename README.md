@@ -25,11 +25,22 @@ network permission at all — it cannot phone home because it has no way to.
 
 ## Download
 
-**Website:** https://YOUR-USERNAME.github.io/vinyl-player/
+**Download page:** <https://technicalnihilist-lgtm.github.io/vinyl-player/>
+**All builds:** <https://github.com/technicalnihilist-lgtm/vinyl-player/releases/latest>
 
-**Direct APK:** https://YOUR-USERNAME.github.io/vinyl-player/download/vinyl-player.apk
+One player, a build for every platform — and every one of them runs offline.
 
-Or grab `vinyl-player.apk` from the [Releases](../../releases) page.
+| Platform | File | How |
+|---|---|---|
+| **Android** | `vinyl-player.apk` | Open it on the phone, allow "install unknown apps", then allow music access |
+| **Windows** | `Vinyl-Player-*-setup.exe` · `*-portable.exe` | Run the installer, or run the portable `.exe` as-is |
+| **macOS** | `Vinyl-Player-*.dmg` | Drag to Applications (Intel + Apple silicon) |
+| **Linux** | `Vinyl-Player-*.AppImage` | `chmod +x` it and run |
+| **iPhone / iPad** | — | Open the download page in Safari → Share → **Add to Home Screen** |
+| **Any browser** | — | The download page installs as an app: own window, Start menu entry, offline |
+
+Per-platform notes, including what each OS will ask you about unsigned builds,
+are in **[docs/PLATFORMS.md](docs/PLATFORMS.md)**.
 
 ### Installing
 
@@ -45,12 +56,17 @@ Requires **Android 5.0 (API 21) or newer**. Version 43.0, about 420 KB.
 ## What is in this repository
 
 ```
-web/        the player itself — React + TypeScript + Vite
+web/        the player itself — React + TypeScript + Vite, and an installable PWA
 android/    the Android shell — a WebView, a MediaStore bridge, no Gradle
+desktop/    the Electron shell for Windows, macOS and Linux
 docs/       the download website (published with GitHub Pages)
 store/      screenshots for the Google Play listing (1080 x 2160)
-.github/    the workflow that builds everything and publishes the site
+.github/    the workflow that builds every platform and publishes the site
 ```
+
+The interface is written **once**, in `web/`. Android, Windows, macOS and Linux
+all run that same build — so the player looks and behaves identically everywhere,
+and there is no second UI to keep in sync.
 
 ### How the Android app works
 
