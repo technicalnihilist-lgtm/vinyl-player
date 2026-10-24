@@ -31,6 +31,11 @@ network permission at all — it cannot phone home because it has no way to.
 
 A 27-second look at the opening screen and the player: [`https://github.com/technicalnihilist-lgtm/vinyl-player/releases/download/v50.0/vinyl-player-demo.mp4`](https://github.com/technicalnihilist-lgtm/vinyl-player/releases/download/v50.0/vinyl-player-demo.mp4)
 
+## Watch the introduction
+
+A 2:19 introduction to the app and to Liquid Glass:
+[`vinyl-player-intro-720p.mp4`](https://github.com/technicalnihilist-lgtm/vinyl-player/releases/download/v50.0/vinyl-player-intro-720p.mp4) · the 27-second demo: [`vinyl-player-demo.mp4`](https://github.com/technicalnihilist-lgtm/vinyl-player/releases/download/v50.0/vinyl-player-demo.mp4)
+
 ## Download
 
 **Download page:** <https://technicalnihilist-lgtm.github.io/vinyl-player/>
