@@ -4,7 +4,7 @@
   "version": "43.0.0",
   "private": true,
   "description": "Vinyl Player for Windows, macOS and Linux \u2014 a liquid-glass player for the music already on your device.",
-  "author": "Vinyl Player",
+  "author": "Raju",
   "license": "MIT",
   "main": "main.js",
   "scripts": {
