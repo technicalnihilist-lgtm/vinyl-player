@@ -1,6 +1,6 @@
 {
   "name": "vinyl-player",
-  "version": "65.0.0",
+  "version": "66.0.0",
   "private": true,
   "description": "A Liquid Glass music player for the songs already on your phone. Fully offline \u2014 built without the INTERNET permission.",
   "author": "Raju",

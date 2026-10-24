@@ -753,6 +753,9 @@ select {
 }
 
 .playlist__list {
+  /* Stop the list handing its scroll on to the page at the ends, which reads as
+     a jolt on a phone. */
+  overscroll-behavior: contain;
   position: relative;
   list-style: none;
   margin: 0;
