@@ -25,9 +25,9 @@ network permission at all — it cannot phone home because it has no way to.
 
 ## Demo
 
-[![the app running](docs/media/vinyl-player-demo.mp4)](docs/media/vinyl-player-demo.mp4)
+[![the app running](https://github.com/technicalnihilist-lgtm/vinyl-player/releases/download/v50.0/vinyl-player-demo.mp4)](https://github.com/technicalnihilist-lgtm/vinyl-player/releases/download/v50.0/vinyl-player-demo.mp4)
 
-A 27-second look at the opening screen and the player: [`docs/media/vinyl-player-demo.mp4`](docs/media/vinyl-player-demo.mp4)
+A 27-second look at the opening screen and the player: [`https://github.com/technicalnihilist-lgtm/vinyl-player/releases/download/v50.0/vinyl-player-demo.mp4`](https://github.com/technicalnihilist-lgtm/vinyl-player/releases/download/v50.0/vinyl-player-demo.mp4)
 
 ## Download
 
