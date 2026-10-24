@@ -1,7 +1,7 @@
 {
   "name": "vinyl-player",
   "private": true,
-  "version": "55.0.0",
+  "version": "56.0.0",
   "type": "module",
   "description": "Liquid-glass vinyl music player with a rotating record, swipeable playlist and an audio-reactive visualizer.",
   "scripts": {
