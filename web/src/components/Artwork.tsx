@@ -24,7 +24,17 @@ export function Artwork({ track, className = '' }: Props) {
 
   return (
     <span className={`artwork ${className}`.trim()} style={{ backgroundImage: `url("${fallback}")` }} aria-hidden="true">
-      {remote && !failed && <img className="artwork__img" src={remote} alt="" draggable={false} onError={() => setFailed(true)} />}
+      {remote && !failed && (
+        <img
+          className="artwork__img"
+          src={remote}
+          alt=""
+          draggable={false}
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailed(true)}
+        />
+      )}
     </span>
   );
 }
