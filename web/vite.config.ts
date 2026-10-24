@@ -7,6 +7,9 @@ export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   base: './',
   server: {
+    allowedHosts: process.env.__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
+      ? [process.env.__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS]
+      : undefined,
     cors: process.env.DEV_PREVIEW_CORS_SUFFIX
       ? { origin: new RegExp('^https?://[^/]+\\.' + process.env.DEV_PREVIEW_CORS_SUFFIX.replace(/\./g, '\\.') + '(?::\\d+)?$') }
       : undefined,
