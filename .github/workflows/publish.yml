@@ -16,6 +16,17 @@ on:
     branches: [main]
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      track:
+        description: 'Play track to publish to'
+        required: true
+        default: production
+        type: choice
+        options:
+          - production
+          - beta
+          - alpha
+          - internal
 
 permissions:
   contents: write
@@ -139,6 +150,47 @@ jobs:
             desktop/out/*.dmg
             desktop/out/*.tar.gz
           if-no-files-found: warn
+
+  # Uploads the App Bundle to Google Play, so a release here becomes an update
+  # there without anyone opening Play Console.
+  #
+  # It stays green until you have set the secret up: if PLAY_SERVICE_ACCOUNT_JSON
+  # is missing the step is skipped and says so, rather than failing the build.
+  #
+  # The very first release of an app cannot go through the API — Google requires
+  # that one to be uploaded by hand in Play Console. Everything after it can come
+  # from here. See docs/PLAY-STORE.md.
+  play:
+    name: Upload to Google Play
+    needs: web-android
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: bundle
+
+      - name: Is a service account configured?
+        id: guard
+        run: |
+          if [ -n "${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Play upload skipped::PLAY_SERVICE_ACCOUNT_JSON is not set. See docs/PLAY-STORE.md to turn this on."
+          fi
+
+      - name: Upload the App Bundle
+        if: steps.guard.outputs.ready == 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.hubclue.vinylplayer
+          releaseFiles: bundle/vinyl-player.aab
+          track: ${{ github.event.inputs.track || 'production' }}
+          status: completed
+          whatsNewDirectory: fastlane/metadata/android/en-US/changelogs
 
   release:
     name: Attach everything to a release
