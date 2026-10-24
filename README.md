@@ -1,5 +1,7 @@
 # Vinyl Player
 
+**By Raju.**
+
 A **liquid-glass music player for Android that plays the songs already on your
 phone.** Nothing is bundled, nothing is downloaded, and the app asks for no
 network permission at all — it cannot phone home because it has no way to.
