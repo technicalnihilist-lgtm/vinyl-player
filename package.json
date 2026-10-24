@@ -1,0 +1,26 @@
+{
+  "name": "vinyl-player",
+  "version": "60.0.0",
+  "private": true,
+  "description": "A Liquid Glass music player for the songs already on your phone. Fully offline \u2014 built without the INTERNET permission.",
+  "author": "Raju",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/technicalnihilist-lgtm/vinyl-player.git"
+  },
+  "homepage": "https://technicalnihilist-lgtm.github.io/vinyl-player/",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "npm --prefix web run dev",
+    "build": "npm --prefix web run build",
+    "test": "npm --prefix web run test",
+    "typecheck": "npm --prefix web run typecheck",
+    "desktop": "npm --prefix desktop run start",
+    "android": "bash android/build.sh",
+    "android:aab": "bash android/build-aab.sh"
+  },
+  "//": "The app itself lives in web/ (React + Vite, wrapped by the Android shell in android/) and desktop/ (Electron). This file is the repository root: metadata and convenience scripts, nothing that changes how web/ installs."
+}
