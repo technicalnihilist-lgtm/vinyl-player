@@ -17,6 +17,7 @@ import { Splash } from './components/Splash';
 import { ChevronDownIcon, HeartIcon } from './components/Icons';
 import { MoreMenu } from './components/MoreMenu';
 import { publishNowPlaying, onMediaAction } from './services/nowPlaying';
+import { hasSystemVolume, setSystemVolume, onSystemVolume } from './services/systemVolume';
 
 export default function App() {
   const { state, engine, currentTrack, actions, library } = usePlayer();
@@ -89,20 +90,30 @@ export default function App() {
   // UI without re-rendering the tree.
   const vars = useMemo(() => styleVars(style, currentTrack?.palette[1]), [style, currentTrack?.palette]);
 
-  // Keep the system's now-playing card in step with the player. Only track
-  // changes and play/pause are pushed: the media card extrapolates the position
-  // itself, so there is nothing to gain from a call every second.
+  // Keep the position in a ref rather than in the effect's dependencies.
+  // `state.currentTime` changes on every timeupdate — several times a second —
+  // and depending on it made this push the song across the bridge that often,
+  // which made the shell rebuild and re-post the media notification just as
+  // often. That was the stutter. The media card extrapolates the position
+  // itself, so it only needs telling when the song or the play state changes.
+  const npPosition = useRef(0);
+  const npDuration = useRef(0);
+  useEffect(() => {
+    npPosition.current = Math.round(state.currentTime * 1000);
+    npDuration.current = Math.round(state.duration * 1000);
+  });
+
   useEffect(() => {
     publishNowPlaying({
       title: currentTrack?.title ?? '',
       artist: currentTrack?.artist ?? '',
       album: currentTrack?.album ?? '',
       playing: state.isPlaying,
-      position: Math.round(state.currentTime * 1000),
-      duration: Math.round(state.duration * 1000),
+      position: npPosition.current,
+      duration: npDuration.current,
     });
   }, [currentTrack?.id, currentTrack?.title, currentTrack?.artist, currentTrack?.album,
-      state.isPlaying, state.currentTime, state.duration]);
+      state.isPlaying]);
 
   // The buttons on the media card drive the real player.
   useEffect(
@@ -124,6 +135,20 @@ export default function App() {
     }, 360);
     return () => window.clearTimeout(t);
   }, [settingsOpen, focusStyle]);
+
+  // The phone's media volume and the app's slider are the same knob. Moving the
+  // slider sets the phone's volume; pressing the hardware keys moves the slider.
+  useEffect(() => onSystemVolume((f) => actions.setVolume(f)), [actions]);
+
+  const handleVolume = useCallback(
+    (v: number) => {
+      // Move the slider straight away, then tell the phone. The shell echoes the
+      // settled value back, so the two never drift.
+      actions.setVolume(v);
+      if (hasSystemVolume()) setSystemVolume(v);
+    },
+    [actions],
+  );
 
   return (
     <div
@@ -242,7 +267,7 @@ export default function App() {
               <VolumeControl
                 volume={state.volume}
                 muted={state.muted}
-                onVolume={actions.setVolume}
+                onVolume={handleVolume}
                 onToggleMute={actions.toggleMute}
               />
             </div>

@@ -17,6 +17,8 @@ import android.content.res.AssetManager;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.Insets;
+import android.database.ContentObserver;
+import android.media.AudioManager;
 import android.media.MediaMetadata;
 import android.media.MediaMetadataRetriever;
 import android.media.session.MediaSession;
@@ -24,6 +26,8 @@ import android.media.session.PlaybackState;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.provider.Settings;
@@ -94,8 +98,19 @@ public class MainActivity extends Activity {
     private String npArtist = "";
     private String npAlbum = "";
     private boolean npPlaying = false;
+    /** What the card last showed, so an unchanged push costs nothing. */
+    private String lastPublished = "\u0000";
     private long npPositionMs = 0;
     private long npDurationMs = 0;
+    // ------------------------------------------------------------- volume
+    // HTMLMediaElement.volume is a separate knob from the phone's media volume,
+    // and a WebView cannot read the system one. So the shell owns it: the app's
+    // slider sets the system media volume, and a hardware volume press comes
+    // back the other way, which is what "reacts to the phone's volume" means.
+    private AudioManager audio;
+    private ContentObserver volumeObserver;
+    private double lastSystemVolume = -1;
+
     private final BroadcastReceiver mediaReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -146,6 +161,7 @@ public class MainActivity extends Activity {
         applyEdgeToEdge();
         watchSystemBars(holder);
         setupNowPlaying();
+        setupSystemVolume();
 
         requestHighRefreshRate();
 
@@ -196,6 +212,9 @@ public class MainActivity extends Activity {
         } catch (IllegalArgumentException ignored) {
             // never registered, or already gone
         }
+        if (volumeObserver != null) {
+            getContentResolver().unregisterContentObserver(volumeObserver);
+        }
         if (web != null) {
             web.removeJavascriptInterface("AndroidBridge");
             web.destroy();
@@ -210,25 +229,18 @@ public class MainActivity extends Activity {
      * A 60 Hz panel simply has no faster mode to pick, and nothing is forced —
      * this only ever moves *up* to a mode the panel already advertises.
      */
+    /**
+     * Follow the display, do not fight it.
+     *
+     * This used to force the highest refresh mode the panel supports. That
+     * ignores what the system is actually asking for, so when the system dropped
+     * to 60Hz — for battery, or because "smooth display" is off — the app kept
+     * pulling it back up and the two disagreed. Doing nothing is the correct
+     * behaviour: Android already runs the app at whatever rate the system has
+     * chosen, including 120Hz when it is set to that.
+     */
     private void requestHighRefreshRate() {
-        if (Build.VERSION.SDK_INT < 23) return;
-        try {
-            Display display = getWindowManager().getDefaultDisplay();
-            Display.Mode current = display.getMode();
-            Display.Mode best = current;
-            for (Display.Mode mode : display.getSupportedModes()) {
-                boolean sameSize = mode.getPhysicalWidth() == current.getPhysicalWidth()
-                        && mode.getPhysicalHeight() == current.getPhysicalHeight();
-                if (sameSize && mode.getRefreshRate() > best.getRefreshRate()) best = mode;
-            }
-            if (best.getModeId() != current.getModeId()) {
-                WindowManager.LayoutParams attrs = getWindow().getAttributes();
-                attrs.preferredDisplayModeId = best.getModeId();
-                getWindow().setAttributes(attrs);
-            }
-        } catch (Exception ignored) {
-            // Nothing to do — the system keeps its own refresh rate.
-        }
+        // Intentionally empty. Kept so the call site reads clearly.
     }
 
     // ------------------------------------------------------- system bars
@@ -289,6 +301,43 @@ public class MainActivity extends Activity {
             return insets.consumeSystemWindowInsets();
         });
         holder.requestApplyInsets();
+    }
+
+    // ------------------------------------------------------------- volume
+    private void setupSystemVolume() {
+        audio = (AudioManager) getSystemService(AUDIO_SERVICE);
+        if (audio == null) {
+            return;
+        }
+        volumeObserver = new ContentObserver(new Handler(Looper.getMainLooper())) {
+            @Override
+            public void onChange(boolean selfChange) {
+                pushSystemVolume();
+            }
+        };
+        getContentResolver().registerContentObserver(
+                Settings.System.getUriFor("volume_music"), false, volumeObserver);
+        pushSystemVolume();
+    }
+
+    private double systemVolumeFraction() {
+        int max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        if (max <= 0) {
+            return 1;
+        }
+        return (double) audio.getStreamVolume(AudioManager.STREAM_MUSIC) / max;
+    }
+
+    /** Hand the phone's media volume to the page, which moves its slider to match. */
+    private void pushSystemVolume() {
+        final double f = systemVolumeFraction();
+        if (Math.abs(f - lastSystemVolume) < 0.001) {
+            return;
+        }
+        lastSystemVolume = f;
+        web.post(() -> web.evaluateJavascript(
+                "window.vinylNative && window.vinylNative.systemVolume"
+                        + " && window.vinylNative.systemVolume(" + f + ")", null));
     }
 
     // ---------------------------------------------------------- now playing
@@ -383,6 +432,15 @@ public class MainActivity extends Activity {
                 .setState(npPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
                         Math.max(0, npPositionMs), npPlaying ? 1f : 0f)
                 .build());
+
+        // Rebuilding and re-posting the notification is not free, and the page
+        // can push several times a second. If nothing the card shows has
+        // changed, leave it alone.
+        String visible = npTitle + "\u0000" + npArtist + "\u0000" + npAlbum + "\u0000" + npPlaying;
+        if (visible.equals(lastPublished)) {
+            return;
+        }
+        lastPublished = visible;
 
         if (Build.VERSION.SDK_INT >= 33
                 && checkSelfPermission("android.permission.POST_NOTIFICATIONS")
@@ -603,6 +661,19 @@ public class MainActivity extends Activity {
             }
             runOnUiThread(MainActivity.this::publishNowPlaying);
         }
+
+    /** The page asks for a level; that becomes the phone's media volume. */
+    @JavascriptInterface
+    public void setSystemVolume(double fraction) {
+        if (audio == null) {
+            return;
+        }
+        int max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        double clamped = Math.max(0, Math.min(1, fraction));
+        int level = (int) Math.round(clamped * max);
+        lastSystemVolume = max > 0 ? (double) level / max : 1;
+        audio.setStreamVolume(AudioManager.STREAM_MUSIC, level, 0);
+    }
 
         @JavascriptInterface
         public void openAppSettings() {

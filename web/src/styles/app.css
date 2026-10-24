@@ -44,7 +44,7 @@
   --r-md: 18px;
   --r-pill: 999px;
 
-  --shadow-lift: 0 20px 46px rgba(0, 0, 0, 0.46), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-lift: 0 14px 30px rgba(0, 0, 0, 0.44), 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-soft: 0 8px 18px rgba(0, 0, 0, 0.3);
 
   --spring: cubic-bezier(0.22, 1.2, 0.36, 1);
@@ -117,10 +117,11 @@ select {
   position: absolute;
   display: block;
   border-radius: 50%;
-  /* The blur is baked into each blob's own layer, so animating `transform` is a
-     pure compositor operation — no repaint and nothing on the main thread. */
-  filter: blur(56px);
-  opacity: 0.7;
+  /* No blur filter here. A radial gradient is already soft, and three
+     screen-sized layers each paying for a 56px blur every frame is one of the
+     most expensive things a phone GPU can be asked to do — it was a large part
+     of the stutter. The gradient stops below carry the softness instead. */
+  opacity: 0.72;
   transform: translateZ(0);
   will-change: transform;
   backface-visibility: hidden;
@@ -131,7 +132,7 @@ select {
   height: 46%;
   left: 4%;
   top: 6%;
-  background: radial-gradient(circle at 40% 40%, var(--blob-1), transparent 68%);
+  background: radial-gradient(circle at 40% 40%, var(--blob-1), transparent 74%);
   animation: drift-1 26s ease-in-out infinite alternate;
 }
 
@@ -140,7 +141,7 @@ select {
   height: 52%;
   right: 0%;
   top: 12%;
-  background: radial-gradient(circle at 60% 40%, var(--blob-2), transparent 68%);
+  background: radial-gradient(circle at 60% 40%, var(--blob-2), transparent 74%);
   animation: drift-2 32s ease-in-out infinite alternate;
 }
 
@@ -1054,6 +1055,8 @@ select {
 }
 
 .timeline__fill {
+  /* timeupdate only fires a few times a second, so without this the bar steps. */
+  transition: width 0.26s linear;
   position: absolute;
   left: 0;
   height: 6px;

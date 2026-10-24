@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { hasSystemVolume } from '../services/systemVolume';
 import { AudioEngine, resolvePlayableUrl } from '../audio/engine';
 import { TRACKS } from '../data/tracks';
 import {
@@ -189,8 +190,11 @@ export function usePlayer(initialTracks: Track[] = TRACKS) {
   }, [engine, state.isPlaying, state.nonce, state.currentIndex]);
 
   // --- volume / mute --------------------------------------------------------
+  // Inside the Android shell the slider drives the phone's media volume, so the
+  // element stays at full and only mute touches it. In a browser the slider
+  // drives the element directly, as before.
   useEffect(() => {
-    engine.el.volume = state.volume;
+    engine.el.volume = hasSystemVolume() ? (state.muted ? 0 : 1) : state.muted ? 0 : state.volume;
     engine.el.muted = state.muted;
   }, [engine, state.volume, state.muted]);
 
