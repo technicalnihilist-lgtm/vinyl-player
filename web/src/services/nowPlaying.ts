@@ -37,12 +37,18 @@ export function hasNowPlaying(): boolean {
   return bridge() !== null;
 }
 
+/** The last payload that went across, so an identical one is not sent again. */
+let lastSent = '';
+
 /** Tell the system what is playing. Returns false when there is nothing to tell. */
 export function publishNowPlaying(np: NowPlaying): boolean {
   const b = bridge();
   if (!b?.nowPlaying) return false;
   try {
-    b.nowPlaying(JSON.stringify(np));
+    const json = JSON.stringify(np);
+    if (json === lastSent) return true;
+    lastSent = json;
+    b.nowPlaying(json);
     return true;
   } catch {
     return false;
