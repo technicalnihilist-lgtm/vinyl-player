@@ -1,0 +1,3 @@
+The stutter is gone: the now-playing card was being rebuilt several times a second, and three screen-sized blobs were each paying for a 56px blur every frame.
+The volume slider now moves with your phone's volume keys, and the hardware keys move the slider.
+The app follows your display's refresh rate instead of forcing the highest one.
