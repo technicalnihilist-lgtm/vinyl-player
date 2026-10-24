@@ -826,6 +826,10 @@ select {
 .track-row {
   position: relative;
   contain: layout paint;
+  /* Rows outside the viewport are not laid out or painted at all. A library of
+     a few hundred songs otherwise renders the whole library to show ten rows. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 52px;
   display: flex;
   align-items: center;
   gap: 4px;
