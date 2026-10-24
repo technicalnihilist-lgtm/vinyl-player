@@ -36,6 +36,20 @@ A 27-second look at the opening screen and the player: [`https://github.com/tech
 A 2:19 introduction to the app and to Liquid Glass:
 [`vinyl-player-intro-720p.mp4`](https://github.com/technicalnihilist-lgtm/vinyl-player/releases/download/v50.0/vinyl-player-intro-720p.mp4) · the 27-second demo: [`vinyl-player-demo.mp4`](https://github.com/technicalnihilist-lgtm/vinyl-player/releases/download/v50.0/vinyl-player-demo.mp4)
 
+## Make it look how you want
+
+Settings has a **Style** panel, so the player does not have to look the way it
+ships. Everything in it is saved on the device and applied as CSS custom
+properties, so a change re-themes the whole UI at once:
+
+- **Accent** — eight colours, or pick any colour at all, or let the playing
+  album's cover choose it for you
+- **Background** — seven colour fields: Liquid Glass, Midnight, Sunset, Ocean,
+  Forest, Mono, Candy
+- **Glass** — a slider for how much frost the panels carry
+- **Corners** — a slider from softly squared to fully round
+- **Record** — six tints for the disc itself
+
 ## Privacy policy
 
 Vinyl Player collects nothing. It is built without the `INTERNET` permission, so it
