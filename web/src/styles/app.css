@@ -1,0 +1,1750 @@
+/* ==========================================================================
+   Vinyl Player — Liquid Glass
+   A fully offline player for the music already on the device.
+
+   The look is built from four layers:
+     1. .ambient   — drifting colour blobs, the thing the glass refracts
+     2. .glass     — translucent, blurred, saturated surfaces
+     3. specular rims + a highlight that follows the pointer (--mx / --my)
+     4. spring motion — press squish, staggered rows, a sliding lens
+   ========================================================================== */
+
+:root {
+  --bg: #05060c;
+  --text: #f3f5fb;
+  --muted: rgba(240, 243, 252, 0.6);
+  --muted-2: rgba(240, 243, 252, 0.38);
+  --accent: #7c3aed;
+
+  --glass-tint: rgba(255, 255, 255, 0.1);
+  --glass-tint-2: rgba(255, 255, 255, 0.03);
+  --glass-line: rgba(255, 255, 255, 0.22);
+  --glass-blur: 44px;
+  --glass-sat: 190%;
+
+  --r-xl: 34px;
+  --r-lg: 26px;
+  --r-md: 18px;
+  --r-pill: 999px;
+
+  --shadow-lift: 0 20px 46px rgba(0, 0, 0, 0.46), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-soft: 0 8px 18px rgba(0, 0, 0, 0.3);
+
+  --spring: cubic-bezier(0.22, 1.2, 0.36, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, 'SF Pro Text', 'Segoe UI', system-ui, 'Noto Sans SC', 'PingFang SC', sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(180, 150, 255, 0.9);
+  outline-offset: 3px;
+  border-radius: 14px;
+}
+
+/* ------------------------------------------------------------ app shell */
+.app {
+  position: relative;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: radial-gradient(140% 120% at 20% 0%, #17102e 0%, #0a0716 45%, #04040a 100%);
+  isolation: isolate;
+}
+
+/* --------------------------------------------------- drifting colour field */
+.ambient {
+  position: absolute;
+  inset: -25%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ambient__blob {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  /* The blur is baked into each blob's own layer, so animating `transform` is a
+     pure compositor operation — no repaint and nothing on the main thread. */
+  filter: blur(56px);
+  opacity: 0.7;
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.ambient__blob--1 {
+  width: 46%;
+  height: 46%;
+  left: 4%;
+  top: 6%;
+  background: radial-gradient(circle at 40% 40%, rgba(124, 58, 237, 0.85), rgba(124, 58, 237, 0) 68%);
+  animation: drift-1 26s ease-in-out infinite alternate;
+}
+
+.ambient__blob--2 {
+  width: 52%;
+  height: 52%;
+  right: 0%;
+  top: 12%;
+  background: radial-gradient(circle at 60% 40%, rgba(37, 99, 235, 0.8), rgba(37, 99, 235, 0) 68%);
+  animation: drift-2 32s ease-in-out infinite alternate;
+}
+
+.ambient__blob--3 {
+  width: 44%;
+  height: 44%;
+  left: 22%;
+  bottom: 0%;
+  background: radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.7), rgba(236, 72, 153, 0) 68%);
+  animation: drift-3 29s ease-in-out infinite alternate;
+}
+
+
+@keyframes drift-1 {
+  to {
+    transform: translate3d(9%, 7%, 0) scale(1.16);
+  }
+}
+@keyframes drift-2 {
+  to {
+    transform: translate3d(-8%, 10%, 0) scale(1.1);
+  }
+}
+@keyframes drift-3 {
+  to {
+    transform: translate3d(7%, -9%, 0) scale(1.18);
+  }
+}
+
+/* --------------------------------------------------------------- glass */
+.glass {
+  position: relative;
+  /* No backdrop-filter: what sits behind the panel is an already-soft gradient,
+     so blurring it costs a full-screen filter pass every frame and changes
+     nothing visible. The glass reads from the tint, the rim and the sheen. */
+  background: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.26) 0%,
+    rgba(255, 255, 255, 0.09) 38%,
+    rgba(255, 255, 255, 0.13) 70%,
+    rgba(255, 255, 255, 0.22) 100%
+  );
+  box-shadow: var(--shadow-lift), 0 0 44px rgba(255, 255, 255, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 rgba(255, 255, 255, 0.14);
+}
+
+/* specular rim — bright top-left, dim, bright bottom-right */
+.glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.25px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.98),
+    rgba(255, 255, 255, 0.3) 20%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.6) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* highlight that follows the pointer */
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+      420px circle at var(--mx, 28%) var(--my, -12%),
+      rgba(255, 255, 255, 0.16),
+      rgba(255, 255, 255, 0) 62%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0) 34%);
+  z-index: 2;
+}
+
+/* ---------------------------------------------------------------- topbar */
+.topbar {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 26px 6px;
+}
+
+.topbar__now {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  animation: rise 0.5s var(--ease-out) both;
+}
+
+.topbar__title {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar__artist {
+  display: block;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.is-flipped {
+  transform: rotate(180deg);
+}
+
+/* ------------------------------------------------------- capsule buttons */
+.glass-pill,
+.icon-btn,
+.glass-btn {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--glass-line);
+  border-radius: var(--r-pill);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.09));
+  color: rgba(255, 255, 255, 0.88);
+  cursor: pointer;
+  box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transition: transform 0.34s var(--spring), background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-pill {
+  width: 46px;
+  height: 46px;
+}
+
+.icon-btn {
+  width: 42px;
+  height: 42px;
+}
+
+.glass-btn {
+  width: 38px;
+  height: 38px;
+}
+
+.glass-pill:hover,
+.icon-btn:hover,
+.glass-btn:hover {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+  color: #fff;
+}
+
+.glass-pill:active,
+.icon-btn:active,
+.glass-btn:active {
+  transform: scale(0.9);
+  transition-duration: 0.1s;
+}
+
+.icon-btn.is-active,
+.glass-btn.is-active {
+  color: #efe6ff;
+  background: linear-gradient(160deg, rgba(168, 85, 247, 0.5), rgba(99, 102, 241, 0.32));
+}
+
+.glass-btn.is-liked {
+  color: #ff7fb2;
+}
+
+/* Floating glass capsules holding bare icons — the control style from
+   Apple's Liquid Glass. The capsule is the surface; the buttons inside are
+   transparent until touched. */
+.transport,
+.volume,
+.playlist__tools {
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.1));
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3), 0 0 24px rgba(255, 255, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.transport {
+  padding: 6px 10px;
+}
+
+.volume {
+  padding: 4px 8px;
+}
+
+.playlist__tools {
+  padding: 5px;
+  gap: 2px;
+}
+
+.transport .icon-btn,
+.volume .icon-btn,
+.playlist__tools .glass-btn {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.transport .icon-btn:hover,
+.volume .icon-btn:hover,
+.playlist__tools .glass-btn:hover,
+.playlist__tools .glass-btn.is-active {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.playlist__tools .glass-btn.is-active {
+  background: linear-gradient(160deg, rgba(168, 85, 247, 0.55), rgba(99, 102, 241, 0.38));
+}
+
+/* the primary action keeps its solid disc inside the capsule */
+.transport__play {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* wider, text-bearing glass button */
+.glass-btn--primary,
+.glass-btn--wide {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  height: auto;
+  padding: 12px 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(140deg, rgba(168, 85, 247, 0.75), rgba(59, 130, 246, 0.62));
+}
+
+.glass-btn--primary:hover,
+.glass-btn--wide:hover {
+  background: linear-gradient(140deg, rgba(180, 100, 255, 0.85), rgba(70, 140, 250, 0.72));
+}
+
+/* ------------------------------------------------------------------ stage */
+.stage {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(390px, 470px);
+  gap: 28px;
+  padding: 10px 28px 28px;
+  transition: grid-template-columns 0.55s var(--ease-out);
+}
+
+.stage__left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 0;
+  padding: 6px 0;
+}
+
+.vinyl-slot {
+  animation: rise 0.6s var(--ease-out) both, float 7s ease-in-out 0.6s infinite;
+}
+
+.stage__now {
+  text-align: center;
+  max-width: 92%;
+  animation: rise 0.55s var(--ease-out) both;
+}
+
+.now__title {
+  margin: 0;
+  font-size: clamp(20px, 2.1vw, 31px);
+  font-weight: 660;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.45);
+}
+
+.now__artist {
+  margin: 7px 0 0;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+
+/* ------------------------------------------------------------------ vinyl */
+.vinyl {
+  position: relative;
+  width: min(38vw, 46vh, 520px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.vinyl__glow {
+  position: absolute;
+  inset: -16%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, var(--accent), transparent 66%);
+  filter: blur(46px);
+  opacity: 0.5;
+  transition: background 0.9s ease;
+}
+
+.vinyl__disc {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 42%, #26262f 0%, #101016 46%, #040407 100%);
+  box-shadow: 0 30px 56px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 2px 0 rgba(255, 255, 255, 0.16), inset 0 -20px 60px rgba(0, 0, 0, 0.8);
+}
+
+/* a pane of glass resting on the record */
+.vinyl__disc::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 38%),
+    radial-gradient(120% 90% at 22% 12%, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 55%);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.vinyl__grooves {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: repeating-radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 255, 255, 0.055) 0,
+    rgba(255, 255, 255, 0.055) 1px,
+    rgba(0, 0, 0, 0) 1px,
+    rgba(0, 0, 0, 0) 4px
+  );
+  -webkit-mask: radial-gradient(circle at 50% 50%, transparent 30%, #000 32%);
+  mask: radial-gradient(circle at 50% 50%, transparent 30%, #000 32%);
+  opacity: 0.8;
+}
+
+.vinyl__spinner {
+  position: absolute;
+  inset: 0;
+  animation: vinyl-spin 12s linear infinite;
+  will-change: transform;
+}
+
+.vinyl__sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 255, 255, 0) 0deg,
+    rgba(255, 255, 255, 0.14) 32deg,
+    rgba(255, 255, 255, 0) 88deg,
+    rgba(255, 255, 255, 0) 194deg,
+    rgba(255, 255, 255, 0.1) 238deg,
+    rgba(255, 255, 255, 0) 300deg
+  );
+  opacity: 0.85;
+}
+
+.vinyl__label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 42%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.5), 0 10px 30px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.vinyl__label::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 46%);
+  pointer-events: none;
+}
+
+.vinyl__hole {
+  position: relative;
+  width: 8%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #05060c;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+  z-index: 2;
+}
+
+.vinyl__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+@keyframes vinyl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ------------------------------------------------------------- visualiser */
+.visualizer {
+  position: relative;
+  width: min(560px, 92%);
+  height: 132px;
+}
+
+.visualizer__canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.visualizer__note {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  margin: 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted-2);
+}
+
+/* ------------------------------------------------------------------ panel */
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  padding: 22px;
+  border-radius: var(--r-xl);
+  animation: glass-in 0.7s var(--ease-out) both;
+  transition: opacity 0.4s ease, transform 0.45s var(--ease-out), visibility 0.4s;
+}
+
+@keyframes glass-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.975);
+  }
+}
+
+.app--collapsed .stage {
+  grid-template-columns: minmax(0, 1fr) 0px;
+}
+
+.app--collapsed .panel {
+  opacity: 0;
+  transform: translateX(34px) scale(0.98);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------- playlist */
+.playlist {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.playlist__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 2px 4px 14px;
+}
+
+.playlist__titles {
+  min-width: 0;
+}
+
+.playlist__title {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 660;
+  letter-spacing: 0.2px;
+}
+
+.playlist__sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.playlist__tools {
+  display: flex;
+  gap: 7px;
+  margin-left: auto;
+}
+
+/* segmented control with a sliding pill */
+.segmented {
+  position: relative;
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.segmented__pill {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  height: calc(100% - 6px);
+  border-radius: var(--r-pill);
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.62));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.32);
+  transition: transform 0.44s var(--spring);
+}
+
+.segmented__pill.is-right {
+  transform: translateX(100%);
+}
+
+.segmented__item {
+  position: relative;
+  z-index: 1;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.segmented__item.is-active {
+  color: #14121c;
+}
+
+.playlist__search,
+.glass-field {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 4px 10px;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--muted);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
+  animation: rise 0.35s var(--ease-out) both;
+}
+
+.glass-field input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  outline: none;
+  font-size: 13.5px;
+}
+
+.glass-field input::placeholder {
+  color: var(--muted-2);
+}
+
+.playlist__list {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0 4px 6px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+.playlist__list::-webkit-scrollbar {
+  width: 8px;
+}
+.playlist__list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
+
+/* the highlight that slides from one song to the next */
+.playlist__lens {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 0;
+  border-radius: 22px;
+  background: linear-gradient(120deg, rgba(168, 85, 247, 0.6), rgba(59, 130, 246, 0.46));
+  box-shadow: 0 14px 34px rgba(88, 60, 220, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  /* Only `transform` is transitioned — animating `height` would force layout
+     on every frame of the slide. */
+  transition: transform 0.46s var(--spring);
+  pointer-events: none;
+}
+
+/* A pulsing halo on its own layer; animating opacity never touches paint. */
+.playlist__lens.is-playing::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  box-shadow: 0 18px 44px rgba(120, 70, 255, 0.55);
+  opacity: 0;
+  animation: lens-breathe 3.4s ease-in-out infinite;
+}
+
+@keyframes lens-breathe {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.playlist__lens.is-static {
+  transition: none;
+}
+
+
+.playlist__empty {
+  padding: 14px 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* --------------------------------------------------------------- track row */
+.track-row {
+  position: relative;
+  contain: layout paint;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  animation: row-in 0.5s var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 26ms);
+}
+
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.row {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 32px 46px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 15px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.3s var(--spring), background 0.25s ease;
+}
+
+.row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.row:active {
+  transform: scale(0.985);
+}
+
+.track-row.is-active .row {
+  color: #fff;
+}
+
+.track-row.is-active .row__artist {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.row__lead {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.row__index {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.track-row.is-active .row__lead {
+  color: #fff;
+}
+
+.row__art {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.row__meta {
+  min-width: 0;
+}
+
+.row__title {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row__artist {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row__duration {
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.track-row.is-active .row__duration {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.row__like {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.34);
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.25s ease, transform 0.34s var(--spring), color 0.25s ease, background 0.25s ease;
+}
+
+.track-row:hover .row__like,
+.row__like:focus-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.row__like:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.row__like.is-liked {
+  opacity: 1;
+  transform: scale(1);
+  color: #ff7fb2;
+}
+
+.row__eq .eq-bar {
+  transform-box: fill-box;
+  transform-origin: bottom;
+}
+
+.row__eq.is-playing .eq-bar {
+  animation: eq-bounce 1s ease-in-out infinite;
+}
+.row__eq.is-playing .eq-bar:nth-child(2) {
+  animation-delay: 0.18s;
+}
+.row__eq.is-playing .eq-bar:nth-child(3) {
+  animation-delay: 0.36s;
+}
+.row__eq.is-playing .eq-bar:nth-child(4) {
+  animation-delay: 0.1s;
+}
+
+@keyframes eq-bounce {
+  0%,
+  100% {
+    transform: scaleY(0.4);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* -------------------------------------------------------------- panel foot */
+.panel__foot {
+  margin-top: 16px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.panel__error {
+  margin: 0;
+  font-size: 12.5px;
+  color: #fca5a5;
+}
+
+.panel__note {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+  animation: rise 0.4s var(--ease-out) both;
+}
+
+/* --------------------------------------------------------------- timeline */
+.timeline {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 13px;
+}
+
+.timeline__time {
+  min-width: 42px;
+  font-size: 12.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline__time--total {
+  text-align: right;
+}
+
+.timeline__rail {
+  position: relative;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.timeline__track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.timeline__fill {
+  position: absolute;
+  left: 0;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, #c084fc, #60a5fa);
+  box-shadow: 0 0 18px rgba(168, 85, 247, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.timeline__handle {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.28), 0 4px 12px rgba(0, 0, 0, 0.5);
+  transition: transform 0.3s var(--spring);
+}
+
+.timeline__rail:hover .timeline__handle {
+  transform: translateY(-50%) scale(1.18);
+}
+
+/* -------------------------------------------------------------- transport */
+.transport-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.transport__play {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  background: linear-gradient(160deg, #ffffff, rgba(255, 255, 255, 0.82));
+  color: #0a0a12;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition: transform 0.36s var(--spring), box-shadow 0.3s ease;
+}
+
+.transport__play:hover {
+  transform: scale(1.07);
+}
+
+.transport__play:active {
+  transform: scale(0.92);
+  transition-duration: 0.1s;
+}
+
+.transport__error {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(248, 113, 113, 0.22);
+  color: #fca5a5;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(10, 10, 18, 0.22);
+  border-top-color: #0a0a12;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ------------------------------------------------------------------ volume */
+.volume {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.volume__range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 92px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.volume__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.26), 0 3px 8px rgba(0, 0, 0, 0.4);
+}
+
+.volume__range::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* ----------------------------------------------------------------- artwork */
+.artwork {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.artwork__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.vinyl__label .artwork,
+.vinyl__art {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+/* -------------------------------------------------------------- empty state */
+.empty {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  padding: 28px 20px;
+  text-align: center;
+  animation: rise 0.55s var(--ease-out) both;
+}
+
+.empty__badge {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  margin-bottom: 6px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.06));
+  color: #e6dcff;
+  box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.empty__badge.is-scanning {
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+  50% {
+    transform: scale(1.07);
+    box-shadow: 0 18px 40px rgba(140, 90, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+}
+
+.empty__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 660;
+}
+
+.empty__body {
+  margin: 0;
+  max-width: 330px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.empty__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.empty__actions .glass-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  height: auto;
+  padding: 11px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   Settings — a sheet of sliding switches
+   ========================================================================== */
+
+.sheet-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.sheet-layer.is-open {
+  pointer-events: auto;
+}
+
+.sheet-layer__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 4, 10, 0.68);
+  opacity: 0;
+  transition: opacity 0.32s ease;
+}
+
+.sheet-layer.is-open .sheet-layer__scrim {
+  opacity: 1;
+}
+
+.sheet {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  /* Deliberately much more opaque than the other glass: a sheet sits over a
+     busy list and its labels have to stay readable. No backdrop-filter, so it
+     still costs nothing per frame. */
+  background: linear-gradient(160deg, rgba(40, 34, 70, 0.975), rgba(16, 13, 30, 0.99) 55%, rgba(26, 21, 48, 0.975));
+  width: min(540px, 100%);
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 20px 18px calc(22px + env(safe-area-inset-bottom, 0px));
+  border-radius: 30px 30px 0 0;
+  transform: translate(-50%, 102%);
+  transition: transform 0.46s var(--spring);
+}
+
+.sheet-layer.is-open .sheet {
+  transform: translate(-50%, 0);
+}
+
+@media (min-width: 720px) {
+  .sheet {
+    bottom: auto;
+    top: 50%;
+    border-radius: 30px;
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.97);
+    transition: transform 0.42s var(--spring), opacity 0.3s ease;
+  }
+  .sheet-layer.is-open .sheet {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.sheet__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.sheet__title {
+  flex: 1;
+  margin: 0;
+  font-size: 21px;
+  font-weight: 660;
+  letter-spacing: 0.2px;
+}
+
+.sheet__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sheet__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+/* ------------------------------------------------- a row with a sliding switch */
+.setting {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.25s ease, border-color 0.25s ease, transform 0.3s var(--spring);
+}
+
+.setting:hover {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.setting:active {
+  transform: scale(0.985);
+}
+
+.setting__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.setting__label {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.setting__hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* the switch itself: a track with a knob that slides across it */
+.switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 31px;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.32);
+  transition: background 0.32s ease, border-color 0.32s ease, box-shadow 0.32s ease;
+}
+
+.switch__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition: transform 0.38s var(--spring);
+}
+
+.setting.is-on .switch {
+  background: linear-gradient(120deg, #a855f7, #3b82f6);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 18px rgba(140, 90, 255, 0.45);
+}
+
+.setting.is-on .switch__knob {
+  transform: translateX(21px);
+}
+
+/* ------------------------------------------------------------ compact list */
+.playlist__list.is-compact .row {
+  grid-template-columns: 26px 38px minmax(0, 1fr) auto;
+  gap: 11px;
+  padding: 6px 13px;
+}
+
+.playlist__list.is-compact .row__art {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+}
+
+.playlist__list.is-compact .row__title {
+  font-size: 14px;
+}
+
+.playlist__list.is-compact .row__artist {
+  font-size: 11.5px;
+}
+
+@media (max-width: 560px) {
+  .playlist__list.is-compact .row {
+    grid-template-columns: 22px 34px minmax(0, 1fr) auto;
+    gap: 9px;
+    padding: 5px 10px;
+  }
+  .playlist__list.is-compact .row__art {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+/* ------------------------------------------------------------- responsive */
+@media (max-width: 1080px) {
+  .vinyl {
+    width: min(44vw, 40vh, 420px);
+  }
+  .volume__range {
+    width: 74px;
+  }
+}
+
+@media (max-width: 900px) {
+  /* Phone: the whole player fits one screen. The page itself never scrolls —
+     the playlist scrolls inside its own panel, which is what you want when the
+     screen is ~17.5 cm corner to corner. */
+  .app {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .stage {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-content: stretch;
+    gap: 12px;
+    padding: 4px 14px 12px;
+    overflow: hidden;
+  }
+  .app--collapsed .stage {
+    grid-template-columns: 1fr;
+  }
+  /* Record and title sit side by side so the playlist gets the screen. */
+  .stage__left {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px 14px;
+    min-height: 0;
+  }
+  .vinyl-slot {
+    flex: 0 0 auto;
+  }
+  .vinyl {
+    width: min(30vw, 17vh, 132px);
+  }
+  .stage__now {
+    flex: 1 1 140px;
+    min-width: 0;
+    max-width: none;
+    text-align: left;
+  }
+  .visualizer {
+    flex: 1 1 100%;
+    height: 44px;
+  }
+  .now__title {
+    font-size: 18px;
+  }
+  .now__artist {
+    font-size: 12px;
+  }
+  /* With the panel away, let the record take the space instead. */
+  .app--collapsed .stage__left {
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .app--collapsed .vinyl {
+    width: min(74vw, 34vh);
+  }
+  .app--collapsed .stage__now {
+    flex: 0 0 auto;
+    text-align: center;
+  }
+  .app--collapsed .visualizer {
+    flex: 0 0 auto;
+    width: min(560px, 92%);
+    height: 76px;
+  }
+
+  .panel {
+    min-height: 0;
+    max-height: none;
+    padding: 14px;
+    border-radius: 26px;
+  }
+  .playlist__list {
+    max-height: none;
+  }
+
+  /* Keep the header on one line — two lines cost the list a whole row. */
+  .playlist__head {
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 0 2px 10px;
+  }
+  .playlist__title {
+    font-size: 17px;
+  }
+  .playlist__sub {
+    font-size: 11px;
+  }
+  .playlist__tools {
+    gap: 5px;
+  }
+  .playlist__tools .glass-btn {
+    width: 32px;
+    height: 32px;
+  }
+  .segmented__item {
+    padding: 5px 10px;
+    font-size: 11.5px;
+  }
+
+  /* Compact transport: the like button lives on every row already, so it is
+     dropped here to keep the controls on one line. */
+  .panel__foot {
+    margin-top: 12px;
+    padding-top: 14px;
+    gap: 12px;
+  }
+  .transport-row {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .transport-row > .glass-btn {
+    display: none;
+  }
+  .transport {
+    gap: 6px;
+  }
+  .transport .icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+  .transport__play {
+    width: 54px;
+    height: 54px;
+  }
+  .volume {
+    gap: 7px;
+  }
+  .volume .icon-btn {
+    width: 34px;
+    height: 34px;
+  }
+  .volume__range {
+    width: 64px;
+  }
+}
+
+@media (max-width: 560px) {
+  .topbar {
+    padding: 14px 16px 2px;
+    gap: 10px;
+  }
+  .glass-pill {
+    width: 42px;
+    height: 42px;
+  }
+  .stage {
+    padding: 6px 14px 18px;
+    gap: 18px;
+  }
+  .panel {
+    padding: 16px;
+    border-radius: 26px;
+  }
+  .playlist__head {
+    flex-wrap: nowrap;
+  }
+  .row {
+    grid-template-columns: 26px 40px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 9px 11px;
+  }
+  .row__art {
+    width: 40px;
+    height: 40px;
+  }
+  .transport-row {
+    flex-wrap: nowrap;
+    justify-content: center;
+  }
+}
+
+/* Touch screens have no hover — keep the row actions visible there. */
+@media (hover: none) {
+  .row__like {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Phones held sideways: stay two-column instead of stacking everything. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .app {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .stage {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
+    grid-template-rows: auto;
+    align-content: stretch;
+    overflow: hidden;
+    padding: 6px 16px 14px;
+    gap: 18px;
+  }
+  .stage__left {
+    justify-content: center;
+    gap: 10px;
+    min-height: 0;
+  }
+  .vinyl {
+    width: min(24vw, 34vh);
+  }
+  .visualizer {
+    height: 84px;
+  }
+  .now__title {
+    font-size: 18px;
+  }
+  .now__artist {
+    font-size: 12px;
+  }
+  .playlist__title {
+    font-size: 20px;
+  }
+  .panel {
+    padding: 14px;
+    border-radius: 22px;
+  }
+  .playlist__list {
+    max-height: none;
+  }
+}
+
+/* ------------------------------------------------------- reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .ambient__blob,
+  .vinyl__spinner,
+  .vinyl-slot,
+  .playlist__lens,
+  .row__eq.is-playing .eq-bar,
+  .empty__badge.is-scanning {
+    animation: none !important;
+  }
+  .track-row,
+  .panel,
+  .stage__now,
+  .topbar__now,
+  .empty {
+    animation: none !important;
+  }
+  .segmented__pill,
+  .playlist__lens,
+  .switch__knob,
+  .sheet {
+    transition: none;
+  }
+  .spinner {
+    animation-duration: 1.4s;
+  }
+}
+
+/* Belt and braces: the React-side reduced-motion flag. */
+.app--calm .ambient__blob,
+.app--calm .vinyl-slot,
+.app--calm .playlist__lens,
+.app--calm .empty__badge {
+  animation: none;
+}
+
+.app--calm .track-row,
+.app--calm .panel,
+.app--calm .stage__now,
+.app--calm .topbar__now,
+.app--calm .empty {
+  animation: none;
+}
+
+.app--calm .sheet,
+.app--calm .switch__knob,
+.app--calm .setting {
+  transition: none;
+}
