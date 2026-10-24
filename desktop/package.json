@@ -85,5 +85,13 @@
       "icon": "build/icon.png",
       "artifactName": "Vinyl-Player-${version}-linux-${arch}.tar.gz"
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/technicalnihilist-lgtm/vinyl-player.git"
+  },
+  "homepage": "https://technicalnihilist-lgtm.github.io/vinyl-player/",
+  "bugs": {
+    "url": "https://github.com/technicalnihilist-lgtm/vinyl-player/issues"
   }
 }
