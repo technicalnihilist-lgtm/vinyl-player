@@ -16,8 +16,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
-VERSION_CODE="${VERSION_CODE:-57}"
-VERSION_NAME="${VERSION_NAME:-57.0}"
+VERSION_CODE="${VERSION_CODE:-58}"
+VERSION_NAME="${VERSION_NAME:-58.0}"
 BUNDLETOOL="${BUNDLETOOL:-}"
 
 if [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/java" ]; then PATH="$JAVA_HOME/bin:$PATH"; fi
