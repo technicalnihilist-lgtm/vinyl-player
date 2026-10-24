@@ -150,7 +150,7 @@ select {
   height: 44%;
   left: 22%;
   bottom: 0%;
-  background: radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.7), rgba(236, 72, 153, 0) 68%);
+  background: radial-gradient(circle at 50% 60%, var(--blob-3), transparent 74%);
   animation: drift-3 29s ease-in-out infinite alternate;
 }
 
