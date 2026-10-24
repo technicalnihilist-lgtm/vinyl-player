@@ -19,3 +19,6 @@ __pycache__/
 *.keystore
 !debug.keystore
 keystore-password.txt
+.yarn/install-state.gz
+build
+dist
