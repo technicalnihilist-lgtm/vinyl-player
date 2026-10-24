@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.hubclue.vinylplayer"
-    android:versionCode="50"
-    android:versionName="50.0">
+    android:versionCode="51"
+    android:versionName="51.0">
 
     <uses-sdk
         android:minSdkVersion="21"
-        android:targetSdkVersion="34" />
+        android:targetSdkVersion="36" />
 
     <!-- The app plays the music already on the device, so it needs to read the
          media library. Android 13+ uses READ_MEDIA_AUDIO; older releases use

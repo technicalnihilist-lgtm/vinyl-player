@@ -36,6 +36,30 @@ A 27-second look at the opening screen and the player: [`https://github.com/tech
 A 2:19 introduction to the app and to Liquid Glass:
 [`vinyl-player-intro-720p.mp4`](https://github.com/technicalnihilist-lgtm/vinyl-player/releases/download/v50.0/vinyl-player-intro-720p.mp4) · the 27-second demo: [`vinyl-player-demo.mp4`](https://github.com/technicalnihilist-lgtm/vinyl-player/releases/download/v50.0/vinyl-player-demo.mp4)
 
+## Privacy policy
+
+Vinyl Player collects nothing. It is built without the `INTERNET` permission, so it
+cannot open a network connection at all. The full policy is at
+[docs/privacy.html](docs/privacy.html) — and live at
+<https://technicalnihilist-lgtm.github.io/vinyl-player/privacy.html>.
+
+## Publishing to Google Play
+
+The Android build is Play-ready: it targets **API 36** (the level Play requires for
+new apps since 31 August 2026) and ships as a signed **App Bundle**.
+
+```bash
+cd android
+export JAVA_HOME=/path/to/jdk17 ANDROID_HOME=/path/to/android-sdk
+export RELEASE_KEYSTORE=/path/to/vinyl-player-upload.jks
+export RELEASE_STORE_PASSWORD=… RELEASE_KEY_ALIAS=vinylplayer RELEASE_KEY_PASSWORD=…
+bash build.sh                                        # signed APK (sideload)
+BUNDLETOOL=/path/to/bundletool-all-1.18.3.jar bash build-aab.sh   # .aab (Play)
+```
+
+Play takes the **`.aab`**, not the APK. The listing assets are in `docs/media/`
+(the 1024×500 feature graphic) and `store/` (the phone screenshots).
+
 ## Download
 
 **Download page:** <https://technicalnihilist-lgtm.github.io/vinyl-player/>

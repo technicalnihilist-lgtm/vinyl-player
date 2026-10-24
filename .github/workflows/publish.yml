@@ -70,11 +70,24 @@ jobs:
         working-directory: android
         run: bash build.sh
 
+      - name: Fetch bundletool
+        run: |
+          curl -sSL --retry 3 -o bundletool.jar \
+            https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar
+          echo "BUNDLETOOL=$PWD/bundletool.jar" >> "$GITHUB_ENV"
+
+      # Play takes an App Bundle, so build one alongside the APK.
+      - name: Build the Android App Bundle
+        working-directory: android
+        run: BUNDLETOOL="$BUNDLETOOL" bash build-aab.sh
+
       - name: Keep the APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: android/build/vinyl-player.apk
+          path: |
+            android/build/vinyl-player.apk
+            android/build/vinyl-player.aab
 
   desktop:
     name: Desktop (${{ matrix.name }})

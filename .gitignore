@@ -13,3 +13,9 @@ desktop/node_modules/
 *.tmp
 .DS_Store
 __pycache__/
+
+# signing material — never commit these
+*.jks
+*.keystore
+!debug.keystore
+keystore-password.txt

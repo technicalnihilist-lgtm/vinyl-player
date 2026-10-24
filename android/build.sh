@@ -9,7 +9,16 @@
 #   JAVA_HOME      a JDK 17            (falls back to `javac` on PATH)
 #   ANDROID_HOME   an Android SDK      (or ANDROID_SDK_ROOT)
 #   WEB_DIST       the built web app   (defaults to ../web/dist)
-#   VERSION_CODE / VERSION_NAME        (default 50 / 50.0)
+#   VERSION_CODE / VERSION_NAME        (default 51 / 51.0)
+#
+#   RELEASE_KEYSTORE                   path to your upload key (.jks/.keystore)
+#   RELEASE_STORE_PASSWORD             its store password
+#   RELEASE_KEY_ALIAS                  the key alias inside it
+#   RELEASE_KEY_PASSWORD               that key's password
+#
+# With the RELEASE_* variables set the APK is signed with your upload key, which
+# is what the Play Store needs. Without them it falls back to a throwaway debug
+# key, which is fine for sideloading but cannot be uploaded to Play.
 #
 # It writes build/vinyl-player.apk.
 set -euo pipefail
@@ -18,8 +27,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$ROOT/.." && pwd)"
 
 WEB_DIST="${WEB_DIST:-$REPO/web/dist}"
-VERSION_CODE="${VERSION_CODE:-50}"
-VERSION_NAME="${VERSION_NAME:-50.0}"
+VERSION_CODE="${VERSION_CODE:-51}"
+VERSION_NAME="${VERSION_NAME:-51.0}"
 
 SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
 
@@ -43,10 +52,11 @@ find_build_tool() {
 
 find_android_jar() {
   local p
-  for p in "$SDK"/platforms/android-34/android.jar "$SDK"/platforms/*/android.jar; do
-    [ -f "$p" ] && { echo "$p"; return 0; }
+  # newest platform first: Play wants a recent target API level
+  for p in $(ls -d "$SDK"/platforms/android-*/ 2>/dev/null | sort -rV); do
+    [ -f "${p}android.jar" ] && { echo "${p}android.jar"; return 0; }
   done
-  echo "!! cannot find android.jar — install platforms;android-34" >&2
+  echo "!! cannot find android.jar — install platforms;android-36" >&2
   return 1
 }
 
@@ -87,7 +97,7 @@ echo "==> linking"
   --manifest AndroidManifest.xml \
   -R build/res.zip \
   -A assets \
-  --min-sdk-version 21 --target-sdk-version 34 \
+  --min-sdk-version 21 --target-sdk-version 36 \
   --version-code "$VERSION_CODE" --version-name "$VERSION_NAME" \
   -0 mp3 \
   --auto-add-overlay
@@ -98,20 +108,27 @@ echo "==> adding classes.dex"
 echo "==> aligning"
 "$ZIPALIGN" -f -p 4 build/base.apk build/aligned.apk
 
-echo "==> keystore"
-# A throwaway debug key so the APK installs. For the Play Store, replace this
-# with your own upload key (see the README).
-if [ ! -f debug.keystore ]; then
-  "$KEYTOOL" -genkeypair -keystore debug.keystore -storepass android -keypass android \
-    -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" \
-    -keyalg RSA -keysize 2048 -validity 10000 -noprompt
-fi
-
 echo "==> signing"
-"$APKSIGNER" sign --ks debug.keystore --ks-pass pass:android --key-pass pass:android \
-  --ks-key-alias androiddebugkey \
-  --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true \
-  --out build/vinyl-player.apk build/aligned.apk
+if [ -n "${RELEASE_KEYSTORE:-}" ] && [ -f "${RELEASE_KEYSTORE}" ]; then
+  echo "    with your upload key ($RELEASE_KEYSTORE)"
+  "$APKSIGNER" sign --ks "$RELEASE_KEYSTORE" \
+    --ks-pass "pass:${RELEASE_STORE_PASSWORD:?set RELEASE_STORE_PASSWORD}" \
+    --key-pass "pass:${RELEASE_KEY_PASSWORD:?set RELEASE_KEY_PASSWORD}" \
+    --ks-key-alias "${RELEASE_KEY_ALIAS:?set RELEASE_KEY_ALIAS}" \
+    --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true \
+    --out build/vinyl-player.apk build/aligned.apk
+else
+  echo "    with a throwaway debug key (set RELEASE_KEYSTORE for a Play upload)"
+  if [ ! -f debug.keystore ]; then
+    "$KEYTOOL" -genkeypair -keystore debug.keystore -storepass android -keypass android \
+      -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" \
+      -keyalg RSA -keysize 2048 -validity 10000 -noprompt
+  fi
+  "$APKSIGNER" sign --ks debug.keystore --ks-pass pass:android --key-pass pass:android \
+    --ks-key-alias androiddebugkey \
+    --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true \
+    --out build/vinyl-player.apk build/aligned.apk
+fi
 
 echo "==> verifying"
 "$APKSIGNER" verify --verbose build/vinyl-player.apk | head -6
