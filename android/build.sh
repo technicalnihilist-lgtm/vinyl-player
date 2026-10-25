@@ -9,7 +9,7 @@
 #   JAVA_HOME      a JDK 17            (falls back to `javac` on PATH)
 #   ANDROID_HOME   an Android SDK      (or ANDROID_SDK_ROOT)
 #   WEB_DIST       the built web app   (defaults to ../web/dist)
-#   VERSION_CODE / VERSION_NAME        (default 70 / 70.0)
+#   VERSION_CODE / VERSION_NAME        (default 71 / 71.0)
 #
 #   RELEASE_KEYSTORE                   path to your upload key (.jks/.keystore)
 #   RELEASE_STORE_PASSWORD             its store password
@@ -27,8 +27,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$ROOT/.." && pwd)"
 
 WEB_DIST="${WEB_DIST:-$REPO/web/dist}"
-VERSION_CODE="${VERSION_CODE:-70}"
-VERSION_NAME="${VERSION_NAME:-70.0}"
+VERSION_CODE="${VERSION_CODE:-71}"
+VERSION_NAME="${VERSION_NAME:-71.0}"
 
 SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
 
@@ -118,17 +118,11 @@ if [ -n "${RELEASE_KEYSTORE:-}" ] && [ -f "${RELEASE_KEYSTORE}" ]; then
     --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true \
     --out build/vinyl-player.apk build/aligned.apk
 else
-  echo "    !! with a throwaway debug key — this build cannot install over any"
-  echo "    !! other build, and Play will reject it. Set RELEASE_KEYSTORE."
-  # A fresh key per run was the bug: every release was signed by a different
-  # key, so Android refused to install one over the last. The key is now
-  # generated once and reused, so at least every debug build agrees with the
-  # others.
+  echo "    with a throwaway debug key (set RELEASE_KEYSTORE for a Play upload)"
   if [ ! -f debug.keystore ]; then
     "$KEYTOOL" -genkeypair -keystore debug.keystore -storepass android -keypass android \
       -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" \
       -keyalg RSA -keysize 2048 -validity 10000 -noprompt
-    echo "    generated a new debug.keystore — keep it, it is this project's debug identity"
   fi
   "$APKSIGNER" sign --ks debug.keystore --ks-pass pass:android --key-pass pass:android \
     --ks-key-alias androiddebugkey \

@@ -7,6 +7,33 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 71 — 25 October 2026
+
+**Every build is signed with the upload key now.**
+
+This is the one that matters. Until now the workflow never handed `build.sh` an
+upload key, so every release fell back to a throwaway debug key — **and a
+different one each run**:
+
+```
+v60 release APK  ->  cert b5e944c4...   (Android Debug)
+v70 release APK  ->  cert a0295694...   (Android Debug)
+```
+
+Android refuses to install an APK over one signed with a different key, so the
+v70 update could never install over v60. The app stayed on 60, the store kept
+offering an update that could never land, and Play would have rejected the App
+Bundle as well.
+
+The workflow now writes the upload key from `KEYSTORE_BASE64` and passes the
+`RELEASE_*` variables to both the APK and the App Bundle builds. Without that
+secret it warns loudly rather than failing quietly. `build.sh` also keeps the
+debug keystore it generates instead of making a new one every run.
+
+**If the app on your phone was signed with a debug key, uninstall it once** — the
+correctly-signed build will not install over it. After that, every update
+installs normally.
+
 ## 70 — 24 October 2026
 
 **Only the first screenful animates in.** Every row ran the entrance animation,
