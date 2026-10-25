@@ -7,6 +7,23 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 74 — 25 October 2026
+
+**The options live in one floating bar, and nowhere else.**
+
+Modelled on the segmented control in the Liquid Glass prototype the design came
+from: one translucent capsule holding its own items, with the rim and the lift on
+the capsule rather than on each button. Three separate glass pills became one
+surface with three plain buttons inside it — tidier, and one less thing to draw.
+
+**The glass is flatter, and lighter because of it.**
+
+The 26px white halo and the 30px lift are gone. What is left is one hairline, one
+lit edge, one soft shadow, and the accent bleed at the base. That is closer to the
+material in the reference — and a wide blur sitting behind every glass surface was
+the most expensive thing on the screen, so removing it is a real saving rather
+than a cosmetic one. The bundle came down with it, 197.5 KB to 196.6 KB.
+
 ## 73 — 25 October 2026
 
 **Why the app felt heavy on open — found it.**

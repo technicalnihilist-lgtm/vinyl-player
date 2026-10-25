@@ -15,7 +15,7 @@ import { VolumeControl } from './components/VolumeControl';
 import { SettingsSheet } from './components/SettingsSheet';
 import { Splash } from './components/Splash';
 import { ChevronDownIcon, HeartIcon } from './components/Icons';
-import { MoreMenu } from './components/MoreMenu';
+import { OptionBar } from './components/OptionBar';
 import { publishNowPlaying, onMediaAction } from './services/nowPlaying';
 import { hasSystemVolume, setSystemVolume, onSystemVolume } from './services/systemVolume';
 
@@ -177,9 +177,8 @@ export default function App() {
           <span className="topbar__artist">{currentTrack?.artist ?? 'Offline player'}</span>
         </div>
 
-        {/* Style, settings and fullscreen now live in one overflow menu, so the
-            topbar has room for the title again. */}
-        <MoreMenu
+        {/* Every app-level option lives in this one bar, and nowhere else. */}
+        <OptionBar
           onStyle={() => {
             setFocusStyle(true);
             setSettingsOpen(true);

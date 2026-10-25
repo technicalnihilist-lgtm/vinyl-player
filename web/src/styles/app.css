@@ -2398,3 +2398,65 @@ select {
 .glass::before {
   box-shadow: inset 0 4px 10px -6px rgba(255, 255, 255, 0.5);
 }
+
+/* ==========================================================================
+   The option bar, and the glass flattened to match the reference
+   ========================================================================== */
+
+/*
+ * One floating capsule holding the options, the way the Liquid Glass prototype
+ * does it. The rim and the lift live on the capsule, not on each item — three
+ * separate glass pills became one surface with three plain buttons inside it,
+ * which is both tidier and cheaper to draw.
+ */
+.optionbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+    inset 0 1.2px 0 rgba(255, 255, 255, 0.34);
+  flex: 0 0 auto;
+}
+
+.optionbar__item {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.82);
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, transform 0.16s var(--spring-snap);
+}
+
+.optionbar__item:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.optionbar__item:active {
+  transform: scale(0.92);
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.optionbar__item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/*
+ * The glass, flattened. The 26px white halo and the 30px lift are gone: what is
+ * left is one hairline, one lit edge, one soft shadow, and the accent bleed at
+ * the base. That is closer to the material in the reference — and it is a good
+ * deal cheaper, because a wide blur behind every glass surface was the most
+ * expensive thing on the screen.
+ */
+.glass {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34), inset 0 1.2px 0 rgba(255, 255, 255, 0.68),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.13), inset 0 -16px 30px -20px var(--accent);
+}
