@@ -1,0 +1,67 @@
+# GitLab CI — for the GitLab copy of Vinyl Player.
+#
+# GitLab Free has no built-in repository mirroring (pull mirroring is Premium and
+# up), so this file does the job instead: a scheduled pipeline pulls main from
+# GitHub and pushes it here. Set the schedule once and the GitLab copy keeps
+# itself in step — nothing to remember, nothing to re-import.
+#
+# One-time setup on GitLab:
+#   1. Import the project (Create new -> Import project -> Repository by URL, or
+#      GitHub with OAuth). See docs/GITLAB.md.
+#   2. Create a project access token with the "write_repository" scope:
+#      Settings -> Access tokens.
+#   3. Add it as a masked CI/CD variable named MIRROR_TOKEN:
+#      Settings -> CI/CD -> Variables.
+#   4. Add a pipeline schedule (Build -> Pipeline schedules), hourly or daily.
+#
+# Then the mirror job runs on that schedule and the GitLab repository follows
+# GitHub on its own.
+
+stages:
+  - mirror
+  - build
+
+# ---------------------------------------------------------------------- mirror
+mirror:
+  stage: mirror
+  image: alpine/git:latest
+  # Only on a schedule, or by hand from the UI. Never on a normal push — this
+  # job writes to this repository, and running it on every push would loop.
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - |
+      if [ -z "$MIRROR_TOKEN" ]; then
+        echo "MIRROR_TOKEN is not set. See the comment at the top of .gitlab-ci.yml."
+        exit 1
+      fi
+    - git clone --mirror https://github.com/technicalnihilist-lgtm/vinyl-player.git src.git
+    - cd src.git
+    - git push --mirror "https://oauth2:${MIRROR_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    - echo "Mirrored GitHub main into this project."
+
+# ----------------------------------------------------------------------- build
+# The same checks the GitHub workflow runs, so a GitLab pipeline means the same
+# thing here as it does there.
+build:
+  stage: build
+  image: node:20
+  cache:
+    key: "$CI_COMMIT_REF_SLUG"
+    paths:
+      - web/node_modules/
+  script:
+    - cd web
+    - npm ci
+    - npm run typecheck
+    - npm test
+    - npm run build
+  artifacts:
+    name: "web-dist-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - web/dist/
+    expire_in: 1 week
