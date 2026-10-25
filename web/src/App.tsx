@@ -290,7 +290,12 @@ export default function App() {
         </aside>
       </main>
 
-      <TabBar tab={tab} onChange={setTab} />
+      <TabBar
+        tab={tab}
+        onChange={setTab}
+        accent={style.accent}
+        onAccent={(hex) => updateStyle('accent', hex)}
+      />
 
       <SettingsSheet
         open={settingsOpen}

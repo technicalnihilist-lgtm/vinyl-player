@@ -2585,3 +2585,52 @@ select {
   max-width: 100%;
   min-width: 0;
 }
+
+/* The accent swatches in the bar, carried over from the reference film's
+   floating toolbar. Compact, because the bar already holds the tabs. */
+.tabbar__item {
+  padding: 9px 15px;
+  gap: 7px;
+  font-size: 14px;
+}
+
+.tabbar__rule {
+  width: 1px;
+  align-self: stretch;
+  margin: 6px 6px;
+  background: rgba(255, 255, 255, 0.14);
+  flex: 0 0 auto;
+}
+
+.tabbar__swatches {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 4px;
+  flex: 0 0 auto;
+}
+
+.tabbar__swatch {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+  transition: transform 0.16s var(--spring-snap), box-shadow 0.16s ease;
+}
+
+.tabbar__swatch:hover {
+  transform: scale(1.18);
+}
+
+.tabbar__swatch.is-active {
+  transform: scale(1.16);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.tabbar__swatch:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
