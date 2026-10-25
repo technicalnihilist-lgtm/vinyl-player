@@ -19,9 +19,9 @@ export function coverGradient(palette: [string, string, string], seed: number): 
   const by = 60 + ((seed * 17) % 32);
   const ang = (seed * 37) % 360;
   return [
-    `radial-gradient(circle at ${ax}% ${ay}%, ${a}d9 0%, transparent 56%)`,
-    `radial-gradient(circle at ${bx}% ${by}%, ${b}c4 0%, transparent 54%)`,
-    `radial-gradient(circle at 50% 46%, ${c}a6 0%, transparent 62%)`,
-    `linear-gradient(${ang}deg, #191230 0%, #0b0818 58%, #05060c 100%)`,
+    `radial-gradient(circle at ${ax}% ${ay}%, ${a} 0%, ${a}00 76%)`,
+    `radial-gradient(circle at ${bx}% ${by}%, ${b} 0%, ${b}00 72%)`,
+    `radial-gradient(circle at 50% 46%, ${c} 0%, ${c}00 80%)`,
+    `linear-gradient(${ang}deg, #2a1f52 0%, #100c22 62%, #05060c 100%)`,
   ].join(', ');
 }
