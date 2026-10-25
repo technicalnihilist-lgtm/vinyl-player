@@ -225,12 +225,11 @@ export const Playlist = memo(function Playlist({
             aria-hidden="true"
           />
         )}
-        {visible.map(({ track, index }, i) => (
+        {visible.map(({ track, index }) => (
           <TrackRow
             key={track.id}
             track={track}
             index={index}
-            order={i}
             isActive={index === currentIndex}
             isPlaying={isPlaying}
             isLiked={!!liked[track.id]}

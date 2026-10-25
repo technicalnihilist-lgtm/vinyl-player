@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { APP_VERSION } from '../version';
 
 const REPO = 'https://github.com/technicalnihilist-lgtm/vinyl-player';
 const REPO_LABEL = 'github.com/technicalnihilist-lgtm/vinyl-player';
@@ -61,7 +62,7 @@ export function Splash({ onDone }: { onDone: () => void }) {
         <p className="splash__url">{REPO_LABEL}</p>
 
         <div className="splash__foot">
-          <span className="splash__version">Version 50.0</span>
+          <span className="splash__version">Version {APP_VERSION}</span>
           <span className="splash__dot" aria-hidden="true">·</span>
           <span className="splash__offline">Works offline</span>
         </div>

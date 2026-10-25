@@ -126,12 +126,18 @@ function load(): Style {
 export function useStyle() {
   const [style, setStyle] = useState<Style>(load);
 
+  // Debounced: dragging the glass or corner slider fired this on every step, so
+  // a single drag wrote to storage dozens of times. One write, a moment later,
+  // is the same thing.
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(style));
-    } catch {
-      // Private mode or a full quota — the app still works, it just forgets.
-    }
+    const t = window.setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(style));
+      } catch {
+        // Private mode or a full quota — the app still works, it just forgets.
+      }
+    }, 250);
+    return () => window.clearTimeout(t);
   }, [style]);
 
   const update = useCallback(<K extends keyof Style>(key: K, value: Style[K]) => {

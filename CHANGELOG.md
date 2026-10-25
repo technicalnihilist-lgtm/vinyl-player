@@ -7,6 +7,33 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 72 — 25 October 2026
+
+**The opening screen said "Version 50".** It was a hard-coded string in the splash
+component, written once when the app launched and never touched again — so it
+said 50 through twenty-two releases. It reads the real version now, the same one
+`package.json` carries and the build stamps in, so it cannot drift again.
+
+**The website needed editing by hand for every release.** The version and the APK
+size were typed into `docs/index.html`. The page now reads them from the latest
+GitHub release, so a new release updates the page by itself. The download links
+already pointed at `releases/latest`. If the call fails — offline, or GitHub
+rate-limiting — the static text stands and nothing breaks.
+
+Three more optimisations:
+
+- **Storage writes are debounced.** Dragging the glass or corner slider wrote to
+  local storage on every step of the drag. One write, a moment later, is the same
+  thing.
+- **The pointer sheen only runs where there is a real pointer.** `pointermove`
+  fires for touch too, including while scrolling, so it was doing a
+  `getBoundingClientRect` and two style writes on every scroll frame to move a
+  highlight nobody could see on a phone. It is limited to fine pointers and to
+  one write per frame now.
+- **The row stagger moved into CSS.** Every row carried an inline custom property
+  to stagger its entrance. `nth-child` does the same job, and a library of a few
+  hundred songs no longer carries a style object per row.
+
 ## 71 — 25 October 2026
 
 **Every build is signed with the upload key now.**

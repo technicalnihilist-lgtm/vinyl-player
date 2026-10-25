@@ -262,7 +262,7 @@
         <a class="link" href="#get">Where</a>
         <a class="link" href="#install">Install</a>
         <a class="link" href="https://github.com/technicalnihilist-lgtm/vinyl-player" target="_blank" rel="noopener">GitHub</a>
-        <a class="btn small" href="https://github.com/technicalnihilist-lgtm/vinyl-player/releases/latest/download/vinyl-player.apk">Download · 942 KB</a>
+        <a class="btn small" href="https://github.com/technicalnihilist-lgtm/vinyl-player/releases/latest/download/vinyl-player.apk">Download · <span data-apk-size>942 KB</span></a>
       </nav>
 
       <div class="shell">
@@ -286,7 +286,7 @@
               <a class="btn ghost" href="#screens">See screenshots</a>
             </div>
             <p class="meta">
-              <b>Version 71.0</b> · 942 KB · Android 5.0 and up · free, no ads
+              <b data-version>Version 71.0</b> · <span data-apk-size>942 KB</span> · Android 5.0 and up · free, no ads
             </p>
           </div>
 
@@ -413,7 +413,7 @@
               <div class="ico">🤖</div>
               <h3>Android</h3>
               <p>The full app: it reads your phone's music library, cover art and all. Android 5.0+.</p>
-              <a class="btn small" href="https://github.com/technicalnihilist-lgtm/vinyl-player/releases/latest/download/vinyl-player.apk">Download APK · 942 KB</a>
+              <a class="btn small" href="https://github.com/technicalnihilist-lgtm/vinyl-player/releases/latest/download/vinyl-player.apk">Download APK · <span data-apk-size>942 KB</span></a>
             </div>
             <div class="card glass">
               <div class="ico">🪟</div>
@@ -532,6 +532,36 @@
             '<a class="btn" href="https://github.com/technicalnihilist-lgtm/vinyl-player/releases/latest/download/vinyl-player.apk">get the APK from GitHub · 942 KB</a>.';
         }
       });
+    })();
+  </script>
+
+  <!--
+    Keep this page honest without anyone editing it.
+
+    The version and the APK size are read from the latest GitHub release, so a
+    new release updates this page by itself. The download links already point at
+    releases/latest, so they follow along too. If the call fails — offline, or
+    GitHub rate-limiting — the static text above stands and nothing breaks.
+  -->
+  <script>
+    (function () {
+      var versionEls = document.querySelectorAll('[data-version]');
+      if (!versionEls.length || !window.fetch) return;
+      fetch('https://api.github.com/repos/technicalnihilist-lgtm/vinyl-player/releases/latest', {
+        headers: { Accept: 'application/vnd.github+json' }
+      })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (rel) {
+          if (!rel || !rel.tag_name) return;
+          var v = String(rel.tag_name).replace(/^v/, '');
+          versionEls.forEach(function (el) { el.textContent = 'Version ' + v; });
+          var apk = (rel.assets || []).filter(function (a) { return /\.apk$/i.test(a.name); })[0];
+          if (!apk) return;
+          document.querySelectorAll('[data-apk-size]').forEach(function (el) {
+            el.textContent = Math.round(apk.size / 1024) + ' KB';
+          });
+        })
+        .catch(function () { /* the static text stands */ });
     })();
   </script>
 </body>

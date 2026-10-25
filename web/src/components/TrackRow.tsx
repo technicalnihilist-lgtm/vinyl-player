@@ -1,5 +1,4 @@
 import { memo } from 'react';
-import type { CSSProperties } from 'react';
 import type { Track } from '../types';
 import { formatTime } from '../utils/format';
 import { Artwork } from './Artwork';
@@ -8,8 +7,6 @@ import { EqualizerIcon, HeartIcon } from './Icons';
 interface Props {
   track: Track;
   index: number;
-  /** Position in the visible list, used to stagger the entrance animation. */
-  order?: number;
   isActive: boolean;
   isPlaying: boolean;
   isLiked: boolean;
@@ -26,7 +23,6 @@ interface Props {
 export const TrackRow = memo(function TrackRow({
   track,
   index,
-  order = 0,
   isActive,
   isPlaying,
   isLiked,
@@ -36,9 +32,8 @@ export const TrackRow = memo(function TrackRow({
 }: Props) {
   return (
     <li
-      className={`track-row${order < 14 ? ' track-row--in' : ''}${isActive ? ' is-active' : ''}`}
+      className={`track-row${isActive ? ' is-active' : ''}`}
       data-track-id={track.id}
-      style={{ '--i': Math.min(order, 18) } as CSSProperties}
     >
       <button
         type="button"

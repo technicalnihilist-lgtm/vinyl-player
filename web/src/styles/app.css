@@ -827,10 +827,26 @@ select {
 }
 
 /* --------------------------------------------------------------- track row */
-.track-row.track-row--in {
+/* Only the rows you can see animate in, and the stagger is nth-child rather than
+   an inline custom property — a library of a few hundred songs was otherwise
+   carrying a style object on every row. */
+.playlist__list > .track-row:nth-child(-n + 14) {
   animation: row-in 0.5s var(--ease-out) both;
-  animation-delay: calc(var(--i, 0) * 26ms);
 }
+.playlist__list > .track-row:nth-child(1) { animation-delay: 0ms; }
+.playlist__list > .track-row:nth-child(2) { animation-delay: 26ms; }
+.playlist__list > .track-row:nth-child(3) { animation-delay: 52ms; }
+.playlist__list > .track-row:nth-child(4) { animation-delay: 78ms; }
+.playlist__list > .track-row:nth-child(5) { animation-delay: 104ms; }
+.playlist__list > .track-row:nth-child(6) { animation-delay: 130ms; }
+.playlist__list > .track-row:nth-child(7) { animation-delay: 156ms; }
+.playlist__list > .track-row:nth-child(8) { animation-delay: 182ms; }
+.playlist__list > .track-row:nth-child(9) { animation-delay: 208ms; }
+.playlist__list > .track-row:nth-child(10) { animation-delay: 234ms; }
+.playlist__list > .track-row:nth-child(11) { animation-delay: 260ms; }
+.playlist__list > .track-row:nth-child(12) { animation-delay: 286ms; }
+.playlist__list > .track-row:nth-child(13) { animation-delay: 312ms; }
+.playlist__list > .track-row:nth-child(14) { animation-delay: 338ms; }
 
 .track-row {
   position: relative;

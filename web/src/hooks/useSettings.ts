@@ -47,12 +47,18 @@ function load(): Settings {
 export function useSettings() {
   const [settings, setSettings] = useState<Settings>(load);
 
+  // Debounced: dragging the glass or corner slider fired this on every step, so
+  // a single drag wrote to storage dozens of times. One write, a moment later,
+  // is the same thing.
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-    } catch {
-      // Private mode or a full quota — the app still works, it just forgets.
-    }
+    const t = window.setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+      } catch {
+        // Private mode or a full quota — the app still works, it just forgets.
+      }
+    }, 250);
+    return () => window.clearTimeout(t);
   }, [settings]);
 
   const toggle = useCallback((key: keyof Settings) => {

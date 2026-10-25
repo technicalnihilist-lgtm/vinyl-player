@@ -11,11 +11,33 @@ export function useSheen(ref: RefObject<HTMLElement | null>): void {
     const el = ref.current;
     if (!el) return;
 
-    const onMove = (e: PointerEvent) => {
+    // Only where there is a real pointer. On a touch screen `pointermove` fires
+    // on every finger movement — including while scrolling — so this ran a
+    // getBoundingClientRect and two style writes on every scroll frame to move a
+    // highlight nobody could see.
+    if (typeof window.matchMedia === 'function'
+        && !window.matchMedia('(pointer: fine)').matches) {
+      return;
+    }
+
+    let queued = false;
+    let lastX = 0;
+    let lastY = 0;
+    const apply = () => {
+      queued = false;
       const r = el.getBoundingClientRect();
       if (!r.width || !r.height) return;
-      el.style.setProperty('--mx', `${((e.clientX - r.left) / r.width) * 100}%`);
-      el.style.setProperty('--my', `${((e.clientY - r.top) / r.height) * 100}%`);
+      el.style.setProperty('--mx', `${((lastX - r.left) / r.width) * 100}%`);
+      el.style.setProperty('--my', `${((lastY - r.top) / r.height) * 100}%`);
+    };
+    const onMove = (e: PointerEvent) => {
+      lastX = e.clientX;
+      lastY = e.clientY;
+      // At most one write per frame, whatever the pointer is doing.
+      if (!queued) {
+        queued = true;
+        requestAnimationFrame(apply);
+      }
     };
     const onLeave = () => {
       el.style.setProperty('--mx', '28%');
