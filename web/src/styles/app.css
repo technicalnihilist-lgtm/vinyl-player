@@ -2460,3 +2460,89 @@ select {
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34), inset 0 1.2px 0 rgba(255, 255, 255, 0.68),
     inset 0 0 0 1px rgba(255, 255, 255, 0.13), inset 0 -16px 30px -20px var(--accent);
 }
+
+/* ==========================================================================
+   The floating tab bar
+   ========================================================================== */
+
+/*
+ * It floats over the bottom of the screen rather than sitting in a strip of its
+ * own — that is what makes it read as a tab bar in the reference rather than as
+ * another toolbar. One glass capsule, plain buttons inside, and the active one
+ * picked out by a lighter inner capsule that slides between them.
+ *
+ * The stage keeps a strip clear underneath so nothing is ever hidden behind it.
+ */
+.tabbar {
+  position: absolute;
+  left: 50%;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px;
+  border-radius: 999px;
+  background: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.16),
+    rgba(255, 255, 255, 0.07) 55%,
+    rgba(255, 255, 255, 0.11)
+  );
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.44), inset 0 1.2px 0 rgba(255, 255, 255, 0.42),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  /* No backdrop-filter, same as everywhere else in this app: a blur pass behind
+     a floating element is a per-frame cost, and the gradient above already reads
+     as frosted against the panel behind it. */
+}
+
+/* the segment that slides */
+.tabbar__pill {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 5px;
+  width: calc((100% - 10px - 2px) / 2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+  transition: transform 0.34s var(--spring);
+  will-change: transform;
+}
+.tabbar__pill.is-right {
+  transform: translateX(calc(100% + 2px));
+}
+
+.tabbar__item {
+  position: relative;
+  z-index: 1;
+  /* Equal widths, so the sliding pill lines up whatever the labels are. */
+  flex: 1 1 0;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  white-space: nowrap;
+}
+.tabbar__item.is-active {
+  color: #fff;
+}
+.tabbar__item:active {
+  transform: scale(0.96);
+}
+
+/* the strip the bar floats in */
+.stage {
+  padding-bottom: 86px;
+}

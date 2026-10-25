@@ -7,6 +7,21 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 75 — 25 October 2026
+
+**The tab bar floats, and the library filter moved into it.**
+
+The design is modelled on the Liquid Glass build shown in the reference: a
+translucent capsule that sits over the bottom of the screen rather than in a strip
+of its own, with the active segment picked out by a lighter inner capsule that
+slides between the two. Library and Liked used to be a control in the playlist
+header; they are tabs now, and the header is quieter for it.
+
+One glass capsule holding plain buttons, the same trick the option bar uses: three
+separate glass pills would be three surfaces to draw. No `backdrop-filter` either —
+a blur pass behind a floating element is a per-frame cost, and the gradient already
+reads as frosted against the panel behind it.
+
 ## 74 — 25 October 2026
 
 **The options live in one floating bar, and nowhere else.**

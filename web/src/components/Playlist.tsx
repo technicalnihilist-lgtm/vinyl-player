@@ -4,8 +4,12 @@ import type { Track } from '../types';
 import { TrackRow } from './TrackRow';
 import { useSheen } from '../hooks/useSheen';
 import { FolderIcon, PlusIcon, RefreshIcon, SearchIcon } from './Icons';
+import type { Tab } from './TabBar';
 
 interface Props {
+  /** Which tab is showing. Owned by the app, drawn by the bottom tab bar. */
+  filter?: Tab;
+  onFilter?: (t: Tab) => void;
   tracks: Track[];
   currentIndex: number;
   isPlaying: boolean;
@@ -24,6 +28,7 @@ interface Props {
 type Filter = 'all' | 'liked';
 
 export const Playlist = memo(function Playlist({
+  filter: filterProp,
   tracks,
   currentIndex,
   isPlaying,
@@ -44,7 +49,8 @@ export const Playlist = memo(function Playlist({
 
   const [query, setQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
-  const [filter, setFilter] = useState<Filter>('all');
+  // Owned by the app and drawn by the bottom tab bar, not by this header.
+  const filter: Filter = filterProp ?? 'all';
   /** Geometry of the sliding highlight behind the active row. */
   const [lens, setLens] = useState<{ y: number; h: number } | null>(null);
 
@@ -138,28 +144,6 @@ export const Playlist = memo(function Playlist({
           <p className="playlist__sub">
             {tracks.length} {tracks.length === 1 ? 'song' : 'songs'}
           </p>
-        </div>
-
-        <div className="segmented" role="tablist" aria-label="Filter">
-          <span className={`segmented__pill${filter === 'liked' ? ' is-right' : ''}`} aria-hidden="true" />
-          <button
-            type="button"
-            role="tab"
-            aria-selected={filter === 'all'}
-            className={`segmented__item${filter === 'all' ? ' is-active' : ''}`}
-            onClick={() => setFilter('all')}
-          >
-            All
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={filter === 'liked'}
-            className={`segmented__item${filter === 'liked' ? ' is-active' : ''}`}
-            onClick={() => setFilter('liked')}
-          >
-            Liked
-          </button>
         </div>
 
         <div className="playlist__tools">

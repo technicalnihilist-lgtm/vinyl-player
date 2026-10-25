@@ -16,6 +16,8 @@ import { SettingsSheet } from './components/SettingsSheet';
 import { Splash } from './components/Splash';
 import { ChevronDownIcon, HeartIcon } from './components/Icons';
 import { OptionBar } from './components/OptionBar';
+import { TabBar } from './components/TabBar';
+import type { Tab } from './components/TabBar';
 import { publishNowPlaying, onMediaAction } from './services/nowPlaying';
 import { hasSystemVolume, setSystemVolume, onSystemVolume } from './services/systemVolume';
 
@@ -27,6 +29,8 @@ export default function App() {
   // Opening the sheet from the palette button should land on the Style section,
   // not leave the user scrolling past six switches to find it.
   const [focusStyle, setFocusStyle] = useState(false);
+  // The library filter lives here so the bottom tab bar can own it.
+  const [tab, setTab] = useState<Tab>('all');
   const [panelOpen, setPanelOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -231,6 +235,7 @@ export default function App() {
             />
           ) : (
             <Playlist
+              filter={tab}
               tracks={state.tracks}
               currentIndex={state.currentIndex}
               isPlaying={state.isPlaying}
@@ -284,6 +289,8 @@ export default function App() {
           </div>
         </aside>
       </main>
+
+      <TabBar tab={tab} onChange={setTab} />
 
       <SettingsSheet
         open={settingsOpen}
