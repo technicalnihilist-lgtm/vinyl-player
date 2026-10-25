@@ -417,7 +417,8 @@ select {
 
 .stage__now {
   text-align: center;
-  max-width: 92%;
+  /* 92% of a cell that can now actually shrink, and never wider than it. */
+  max-width: min(92%, 100%);
   animation: rise 0.34s var(--ease-out) both;
 }
 
@@ -1540,7 +1541,7 @@ select {
     overflow: hidden;
   }
   .stage {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
     align-content: stretch;
     gap: 12px;
@@ -1548,7 +1549,7 @@ select {
     overflow: hidden;
   }
   .app--collapsed .stage {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   /* Record and title sit side by side so the playlist gets the screen. */
   .stage__left {
@@ -1568,7 +1569,9 @@ select {
   .stage__now {
     flex: 1 1 140px;
     min-width: 0;
-    max-width: none;
+    /* not `none`: the title is nowrap, and with no ceiling it runs off both
+       edges of the screen in the vinyl-focus view */
+    max-width: 100%;
     text-align: left;
   }
   .visualizer {
@@ -2517,9 +2520,6 @@ select {
 .tabbar__item {
   position: relative;
   z-index: 1;
-  /* Equal widths, so the sliding pill lines up whatever the labels are. */
-  flex: 1 1 0;
-  justify-content: center;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2545,4 +2545,43 @@ select {
 /* the strip the bar floats in */
 .stage {
   padding-bottom: 86px;
+}
+
+/* ==========================================================================
+   A grid item will not shrink below its content unless you let it
+   ========================================================================== */
+
+/*
+ * This is what put the panel off the left edge of the screen and ran the
+ * now-playing title off both sides.
+ *
+ * A grid item defaults to `min-width: auto`, which means it refuses to shrink
+ * below its content's minimum width. The title is `white-space: nowrap`, so one
+ * long song name — and this library is full of them — made the grid wider than
+ * the screen. Everything in that grid then sat in a column too wide for the
+ * viewport: the panel slid past the left edge and the title spilled both ways.
+ *
+ * Letting the items shrink fixes the layout, and the title's own
+ * `overflow: hidden; text-overflow: ellipsis` then does what it was always meant
+ * to do — truncate with an ellipsis instead of running off the screen.
+ */
+.stage,
+.stage > *,
+.topbar > *,
+.panel__foot > * {
+  min-width: 0;
+}
+
+.now__title,
+.now__artist,
+.topbar__title,
+.topbar__artist {
+  max-width: 100%;
+}
+
+/* Last word on the now-playing block: it may never be wider than its cell, in
+   any layout, whatever an earlier media query said. */
+.stage__now {
+  max-width: 100%;
+  min-width: 0;
 }
