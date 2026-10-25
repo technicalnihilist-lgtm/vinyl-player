@@ -15,6 +15,7 @@ interface Props {
  * if it fails to load. The listener therefore never sees a blank square.
  */
 export function Artwork({ track, className = '' }: Props) {
+  // Now a CSS gradient rather than an image URL — see utils/artwork.ts.
   const fallback = track.fallbackArt ?? track.artwork;
   const remote = track.artwork && track.artwork !== fallback ? track.artwork : null;
   const [failed, setFailed] = useState(false);
@@ -23,7 +24,7 @@ export function Artwork({ track, className = '' }: Props) {
   useEffect(() => setFailed(false), [track.id]);
 
   return (
-    <span className={`artwork ${className}`.trim()} style={{ backgroundImage: `url("${fallback}")` }} aria-hidden="true">
+    <span className={`artwork ${className}`.trim()} style={{ backgroundImage: fallback, backgroundColor: '#0d0a1c' }} aria-hidden="true">
       {remote && !failed && (
         <img
           className="artwork__img"

@@ -2363,3 +2363,38 @@ select {
   color: rgba(240, 243, 252, 0.42);
   font-variant-numeric: tabular-nums;
 }
+
+/* ==========================================================================
+   Gen 5 — the glass, and the one place it stays simple
+   ========================================================================== */
+
+/*
+ * The bar. Everything else in the app can carry a heavy treatment; this is the
+ * thing you look at while listening, so it is a single clean capsule: a
+ * hairline rim, one lit edge, and a shadow with no halo.
+ */
+.transport,
+.volume {
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.52),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+/*
+ * Gen 5 on the panels. Three things separate it from the old surface:
+ * a brighter lit edge, a hairline that reads as a real bevel, and a faint
+ * accent-tinted bleed at the base — which is what makes the material look like
+ * it is picking up colour from what is behind it rather than just sitting on
+ * top. All three follow border-radius everywhere, and the accent one follows
+ * whatever colour the Style panel is set to.
+ */
+.glass {
+  box-shadow: var(--shadow-lift), 0 0 26px rgba(255, 255, 255, 0.06),
+    inset 0 1.4px 0 rgba(255, 255, 255, 0.78), inset 0 -1.4px 0 rgba(255, 255, 255, 0.17),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14), inset 0 -16px 30px -20px var(--accent);
+}
+
+/* A second, tighter highlight just inside the top edge: the light catching the
+   thickness of the material rather than its surface. */
+.glass::before {
+  box-shadow: inset 0 4px 10px -6px rgba(255, 255, 255, 0.5);
+}

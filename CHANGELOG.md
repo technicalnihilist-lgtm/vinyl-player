@@ -7,6 +7,33 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 73 — 25 October 2026
+
+**Why the app felt heavy on open — found it.**
+
+Every track's fallback cover was an SVG data URI with **two Gaussian blur filters
+inside it, one at a 46px radius**. On a library of a few hundred songs that is a
+few hundred blurred SVGs to rasterise before the list could settle. The same
+picture is now a plain CSS gradient: no image, no data URI, no filter, nothing to
+decode. A cover went from about a kilobyte of markup plus a blur pass to roughly
+150 bytes of gradient.
+
+**And the opening screen held for nearly six seconds.** It waits 2.4 now — the
+animation is the same, you just get to your music sooner.
+
+### Gen 5 glass
+
+- **The bar is simple on purpose.** It is the thing you look at while listening,
+  so it is one clean capsule: a hairline rim, one lit edge, and a shadow with no
+  halo. Everything else can carry the heavier treatment.
+- **The panels are not.** Three things changed: a brighter lit edge, a hairline
+  that reads as a real bevel, and a faint **accent-tinted bleed at the base** —
+  which is what makes the material look like it is picking up colour from behind
+  it rather than sitting on top. That bleed follows whatever colour the Style
+  panel is set to.
+- A second, tighter highlight just inside the top edge: the light catching the
+  thickness of the material rather than its surface.
+
 ## 72 — 25 October 2026
 
 **The opening screen said "Version 50".** It was a hard-coded string in the splash

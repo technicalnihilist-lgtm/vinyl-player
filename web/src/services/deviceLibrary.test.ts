@@ -37,16 +37,20 @@ describe('mapDeviceTracks', () => {
     expect(mapDeviceTracks(PAYLOAD)[1].id).toBe('device-42');
   });
 
-  it('falls back to generated art when a file has no picture', () => {
+  it('falls back to a generated cover when a file has no picture', () => {
     const t = mapDeviceTracks(PAYLOAD)[1];
-    expect(t.artwork.startsWith('data:image/svg+xml')).toBe(true);
-    expect(t.fallbackArt?.startsWith('data:image/svg+xml')).toBe(true);
+    // A CSS gradient, not an image: see utils/artwork.ts for why.
+    expect(t.artwork).toContain('radial-gradient');
+    expect(t.fallbackArt).toContain('radial-gradient');
+    expect(t.artwork).not.toContain('data:');
   });
 
   it('always keeps a procedural fallback, even when real art exists', () => {
     const t = mapDeviceTracks(PAYLOAD)[0];
     expect(t.artwork).toContain('/art/41');
-    expect(t.fallbackArt?.startsWith('data:image/svg+xml')).toBe(true);
+    expect(t.fallbackArt).toContain('radial-gradient');
+    // and it is a gradient, so there is no image to decode
+    expect(t.fallbackArt).not.toContain('data:');
   });
 
   it('never shows blank titles or artists', () => {

@@ -12,8 +12,8 @@ export function Splash({ onDone }: { onDone: () => void }) {
   const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
-    const out = window.setTimeout(() => setLeaving(true), 5400);
-    const done = window.setTimeout(onDone, 5950);
+    const out = window.setTimeout(() => setLeaving(true), 1900);
+    const done = window.setTimeout(onDone, 2400);
     return () => {
       window.clearTimeout(out);
       window.clearTimeout(done);

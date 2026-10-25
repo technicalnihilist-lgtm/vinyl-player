@@ -13,7 +13,7 @@ import {
 } from '../services/deviceLibrary';
 import { initState, playerReducer } from '../state/player';
 import type { Track } from '../types';
-import { makeArtwork } from '../utils/artwork';
+import { coverGradient } from '../utils/artwork';
 import { clampTime } from '../utils/format';
 
 const IMPORT_PALETTES: [string, string, string][] = [
@@ -291,7 +291,7 @@ export function usePlayer(initialTracks: Track[] = TRACKS) {
         src: url,
         duration,
         palette,
-        artwork: makeArtwork(palette, (stamp + i) % 900 + 50),
+        artwork: coverGradient(palette, (stamp + i) % 900 + 50),
         source: 'import',
       });
     }

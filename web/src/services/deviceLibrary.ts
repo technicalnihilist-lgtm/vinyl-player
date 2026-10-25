@@ -1,5 +1,5 @@
 import type { Track } from '../types';
-import { makeArtwork } from '../utils/artwork';
+import { coverGradient } from '../utils/artwork';
 
 /**
  * Reads the music already on the user's device.
@@ -76,7 +76,7 @@ export function mapDeviceTracks(raw: unknown): Track[] {
     const palette = PALETTES[hashOf(title + artist) % PALETTES.length];
 
     // Always have procedural art to fall back on if the file has no picture.
-    const fallbackArt = makeArtwork(palette, (hashOf(id) % 900) + 50);
+    const fallbackArt = coverGradient(palette, (hashOf(id) % 900) + 50);
     const hasArt = o.hasArt !== false;
 
     out.push({
