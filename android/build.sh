@@ -118,11 +118,17 @@ if [ -n "${RELEASE_KEYSTORE:-}" ] && [ -f "${RELEASE_KEYSTORE}" ]; then
     --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true \
     --out build/vinyl-player.apk build/aligned.apk
 else
-  echo "    with a throwaway debug key (set RELEASE_KEYSTORE for a Play upload)"
+  echo "    !! with a throwaway debug key — this build cannot install over any"
+  echo "    !! other build, and Play will reject it. Set RELEASE_KEYSTORE."
+  # A fresh key per run was the bug: every release was signed by a different
+  # key, so Android refused to install one over the last. The key is now
+  # generated once and reused, so at least every debug build agrees with the
+  # others.
   if [ ! -f debug.keystore ]; then
     "$KEYTOOL" -genkeypair -keystore debug.keystore -storepass android -keypass android \
       -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" \
       -keyalg RSA -keysize 2048 -validity 10000 -noprompt
+    echo "    generated a new debug.keystore — keep it, it is this project's debug identity"
   fi
   "$APKSIGNER" sign --ks debug.keystore --ks-pass pass:android --key-pass pass:android \
     --ks-key-alias androiddebugkey \

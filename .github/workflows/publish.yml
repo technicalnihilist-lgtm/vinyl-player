@@ -77,6 +77,25 @@ jobs:
           echo "platforms:";   ls "$SDK/platforms"
           ls "$SDK/platforms"/*/android.jar
 
+      # Sign with the upload key. Without this the build falls back to a debug
+      # key, and build.sh generated a *fresh random* one on every run — so each
+      # release was signed by a different key and Android refused to install it
+      # over the previous one. That is why the store kept offering an update that
+      # could never install.
+      - name: Prepare the signing key
+        working-directory: android
+        run: |
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > upload.jks
+            echo "RELEASE_KEYSTORE=$PWD/upload.jks" >> "$GITHUB_ENV"
+            echo "RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+            echo "RELEASE_KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> "$GITHUB_ENV"
+            echo "RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> "$GITHUB_ENV"
+            echo "Signing with the upload key."
+          else
+            echo "::warning title=Unsigned build::KEYSTORE_BASE64 is not set, so this APK is signed with a throwaway debug key. It cannot install over a build signed with any other key, and Google Play will reject it. See docs/PLAY-STORE.md."
+          fi
+
       - name: Build the Android APK
         working-directory: android
         run: bash build.sh
@@ -88,6 +107,17 @@ jobs:
           echo "BUNDLETOOL=$PWD/bundletool.jar" >> "$GITHUB_ENV"
 
       # Play takes an App Bundle, so build one alongside the APK.
+      - name: Prepare the signing key
+        working-directory: android
+        run: |
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > upload.jks
+            echo "RELEASE_KEYSTORE=$PWD/upload.jks" >> "$GITHUB_ENV"
+            echo "RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+            echo "RELEASE_KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> "$GITHUB_ENV"
+            echo "RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> "$GITHUB_ENV"
+          fi
+
       - name: Build the Android App Bundle
         working-directory: android
         run: BUNDLETOOL="$BUNDLETOOL" bash build-aab.sh
