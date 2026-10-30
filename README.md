@@ -1,6 +1,6 @@
 # Vinyl Player
 
-**Current version: 78** · [Changelog](CHANGELOG.md) · every change is committed here as it is made
+**Current version: 79** · [Changelog](CHANGELOG.md) · every change is committed here as it is made
 
 
 **By Raju.**

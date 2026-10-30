@@ -2634,3 +2634,180 @@ select {
   outline: 2px solid #fff;
   outline-offset: 2px;
 }
+
+/* ==========================================================================
+   Bounce — carried over from the build that was handed over
+   
+   A springier easing curve than the app had, applied to the things you
+   actually touch: the pills, the swatches, the sheet, the panel, the tab
+   pill and the switch knob. Plus a launch animation on the app itself, a
+   splash exit, and a slow beat on the play button and the vinyl glow while
+   music is playing.
+   ========================================================================== */
+
+:root {
+  --lg-blur: 20px;
+  --lg-sat: 1.7;
+  --lg-tint: 1;
+  --bounce: cubic-bezier(.34,1.56,.64,1);
+  --bounce-soft: cubic-bezier(.3,1.35,.5,1);
+  --bounce-big: cubic-bezier(.2,1.7,.4,1);
+  /* These three were referenced but never defined in the build this came from.
+     --bs and --bk had fallbacks so they survived; --bounce-in did not, which
+     quietly invalidated every transition that used it. */
+  --bounce-in: cubic-bezier(.4,0,.2,1);
+  --bs: 1;
+  --bk: 1;
+}
+
+@keyframes appOpen{
+  0%{
+  opacity:0;
+  transform:scale(.75) translateY(36px)}}
+
+@keyframes beat{
+  0%,100%{
+  transform:scale(1)}10%{
+  transform:scale(calc(1 + .05*var(--bk,1)))}26%{
+  transform:scale(.99)}}
+
+@keyframes bpop{
+  0%{
+  transform:scale(calc(1 - .16*var(--bk,1)))}55%{
+  transform:scale(calc(1 + .1*var(--bk,1)))}100%{
+  transform:scale(1)}}
+
+@keyframes dmIn{
+  0%{
+  opacity:0;
+  transform:scale(.3) translateY(-14px)}}
+
+@keyframes dmOut{
+  25%{
+  opacity:1;
+  transform:scale(calc(1 + .06*var(--bk,1)))}to{
+  opacity:0;
+  transform:scale(.3) translateY(-14px)}}
+
+@keyframes menuBounce{
+  0%{
+  opacity:0;
+  transform:scale(.4) translateY(-12px)}}
+
+@keyframes panelBounce{
+  0%{
+  opacity:0;
+  transform:translateY(30px) scale(.95)}}
+
+@keyframes rowBounce{
+  0%{
+  opacity:0;
+  transform:translateY(16px) scale(.95)}}
+
+@keyframes splashOut{
+  35%{
+  transform:scale(1.05)}to{
+  opacity:0;
+  transform:scale(.85)}}
+
+:root {
+  --lg-blur:20px;
+  --lg-sat:1.7;
+  --lg-tint:1;
+  --bounce:cubic-bezier(.34,1.56,.64,1);
+  --bounce-soft:cubic-bezier(.3,1.35,.5,1);
+  --bounce-big:cubic-bezier(.2,1.7,.4,1)
+}
+
+/* tap bounce */
+button,.row,.tabbar__item,.glass-btn,.glass-pill,.icon-btn,.swatch,.mood,.more__item,.segmented__item,.optionbar__item {
+  transition:transform calc(.5s*var(--bs,1)) var(--bounce),background .25s ease,box-shadow .25s ease,opacity .25s ease,color .2s ease;
+  -webkit-tap-highlight-color:transparent
+}
+
+.bounce-pop {
+  animation:bpop calc(.6s*var(--bs,1)) var(--bounce)
+}
+
+/* open / close bounce */
+.sheet {
+  transition:transform calc(.6s*var(--bs,1)) var(--bounce-soft),opacity .3s ease !important
+}
+
+.more__menu {
+  transform-origin:top right;
+  animation:menuBounce calc(.5s*var(--bs,1)) var(--bounce-big) backwards !important
+}
+
+.panel {
+  animation:panelBounce calc(.65s*var(--bs,1)) var(--bounce-soft) backwards !important;
+  transition:opacity .35s ease,visibility .35s !important
+}
+
+.stage {
+  transition:grid-template-columns calc(.6s*var(--bs,1)) var(--bounce-soft) !important
+}
+
+.row {
+  animation:rowBounce calc(.55s*var(--bs,1)) var(--bounce) backwards
+}
+
+.tabbar__pill,.segmented__pill {
+  transition:transform calc(.55s*var(--bs,1)) var(--bounce),width calc(.55s*var(--bs,1)) var(--bounce),left calc(.55s*var(--bs,1)) var(--bounce) !important
+}
+
+.switch__knob {
+  transition:transform calc(.45s*var(--bs,1)) var(--bounce) !important
+}
+
+/* playing: app bounces to the beat (transform-safe elements only) */
+.app--playing .transport__play {
+  animation:beat 1calc(.6s*var(--bs,1)) var(--bounce) infinite
+}
+
+.app--playing .vinyl__glow {
+  animation:beat 1calc(.6s*var(--bs,1)) var(--bounce) infinite
+}
+
+/* launch */
+.app {
+  animation:appOpen 1s var(--bounce-big) backwards
+}
+
+.splash.is-leaving {
+  animation:splashOut calc(.6s*var(--bs,1)) var(--bounce-soft) both !important
+}
+
+.splash__mark {
+  animation:mark-in 1s var(--bounce-big) both !important
+}
+
+.sheet-layer:not(.is-open) .sheet {
+  transition:transform calc(.5s*var(--bs,1)) var(--bounce-in),opacity .3s ease .12s !important
+}
+
+.sheet-layer.is-open .sheet {
+  transition:transform calc(.65s*var(--bs,1)) var(--bounce-soft),opacity .3s ease !important
+}
+
+.app.app-resume.go {
+  animation:appOpen calc(.9s*var(--bs,1)) var(--bounce-big) backwards
+}
+
+
+/* The bounce is decoration. Anyone who has asked their device to calm down gets
+   none of it. */
+@media (prefers-reduced-motion: reduce) {
+  .app,
+  .app.app-resume.go,
+  .splash.is-leaving,
+  .splash__mark,
+  .panel,
+  .row,
+  .more__menu,
+  .bounce-pop,
+  .app--playing .transport__play,
+  .app--playing .vinyl__glow {
+    animation: none !important;
+  }
+}
