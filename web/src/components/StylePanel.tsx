@@ -109,6 +109,28 @@ export function StylePanel({ style, onChange, onReset }: Props) {
       </div>
 
       {/* ------------------------------------------------------------ glass */}
+      {/* ------------------------------------------------------------ depth */}
+      <div className="style__group">
+        <label className="style__label" htmlFor="style-depth">
+          Depth <span className="style__value">{style.depth}%</span>
+        </label>
+        <input
+          id="style-depth"
+          className="slider"
+          type="range"
+          min={0}
+          max={100}
+          step={5}
+          value={style.depth}
+          onChange={(e) => onChange('depth', Number(e.target.value))}
+        />
+        <p className="style__hint">
+          {style.depth === 0
+            ? 'Flat — no tilt, no parallax, one soft shadow. The old look.'
+            : `The record leans with the phone, and the layers behind it move at their own speed.`}
+        </p>
+      </div>
+
       <div className="style__group">
         <label className="style__label" htmlFor="style-glass">
           Glass <span className="style__value">{style.glass}%</span>

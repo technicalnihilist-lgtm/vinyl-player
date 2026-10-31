@@ -2834,8 +2834,8 @@ button,.row,.tabbar__item,.glass-btn,.glass-pill,.icon-btn,.swatch,.mood,.more__
 /* The record leans. The disc is the one thing with real thickness, so it gets a
    true 3D transform rather than a flat shift. */
 .vinyl__disc {
-  transform: perspective(1100px) rotateX(calc(var(--tilt-y) * -7deg))
-    rotateY(calc(var(--tilt-x) * 7deg));
+  transform: perspective(1100px) rotateX(calc(var(--tilt-y) * -7deg * var(--depth, 0.6)))
+    rotateY(calc(var(--tilt-x) * 7deg * var(--depth, 0.6)));
   transform-style: preserve-3d;
   transition: transform 0.1s linear;
   will-change: transform;
@@ -2843,14 +2843,15 @@ button,.row,.tabbar__item,.glass-btn,.glass-pill,.icon-btn,.swatch,.mood,.more__
 
 /* The glow behind it drifts the other way, which is what sells the separation. */
 .vinyl__glow {
-  transform: translate3d(calc(var(--tilt-x) * -1 * var(--p-near)),
-    calc(var(--tilt-y) * -1 * var(--p-near)), 0);
+  transform: translate3d(calc(var(--tilt-x) * -1 * var(--p-near) * var(--depth, 0.6)),
+    calc(var(--tilt-y) * -1 * var(--p-near) * var(--depth, 0.6)), 0);
   transition: transform 0.1s linear;
 }
 
 /* The ambient colour sits furthest back, so it moves least. */
 .ambient {
-  transform: translate3d(calc(var(--tilt-x) * var(--p-far)), calc(var(--tilt-y) * var(--p-far)), 0);
+  transform: translate3d(calc(var(--tilt-x) * var(--p-far) * var(--depth, 0.6)),
+    calc(var(--tilt-y) * var(--p-far) * var(--depth, 0.6)), 0);
   transition: transform 0.1s linear;
 }
 
@@ -2861,16 +2862,19 @@ button,.row,.tabbar__item,.glass-btn,.glass-pill,.icon-btn,.swatch,.mood,.more__
  * costs one more shadow than before rather than a filter pass.
  */
 .glass {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 10px 24px rgba(0, 0, 0, 0.32),
-    0 32px 64px -24px rgba(0, 0, 0, 0.55), inset 0 1.2px 0 rgba(255, 255, 255, 0.68),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.13), inset 0 -16px 30px -20px var(--accent);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, var(--sh-near, 0.3)),
+    0 10px 24px rgba(0, 0, 0, var(--sh-mid, 0.32)),
+    0 32px 64px -24px rgba(0, 0, 0, var(--sh-far, 0.55)),
+    inset 0 1.2px 0 rgba(255, 255, 255, 0.68), inset 0 0 0 1px rgba(255, 255, 255, 0.13),
+    inset 0 -16px 30px -20px var(--accent);
 }
 
 /* The bar sits a step further forward than the panel it floats over. */
 .tabbar {
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.34), 0 14px 30px rgba(0, 0, 0, 0.42),
-    0 40px 70px -28px rgba(0, 0, 0, 0.6), inset 0 1.2px 0 rgba(255, 255, 255, 0.42),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, var(--sh-near, 0.34)),
+    0 14px 30px rgba(0, 0, 0, var(--sh-mid, 0.42)),
+    0 40px 70px -28px rgba(0, 0, 0, var(--sh-far, 0.6)),
+    inset 0 1.2px 0 rgba(255, 255, 255, 0.42), inset 0 0 0 1px rgba(255, 255, 255, 0.14);
 }
 
 /* Pressing pushes a thing back into the page rather than shrinking it flat. */

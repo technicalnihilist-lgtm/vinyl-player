@@ -16,6 +16,13 @@ export interface Style {
   glass: number;
   /** Corner roundness in pixels, 8–34. */
   roundness: number;
+  /**
+   * How much the 4D tilt and the layered depth to show, 0–100.
+   * At 0 the app is flat — no tilt, no parallax, and the glass falls back to the
+   * single soft shadow it had before the depth work. That is the "old look",
+   * available whenever you want it.
+   */
+  depth: number;
   /** The record itself. */
   disc: DiscId;
 }
@@ -95,6 +102,7 @@ export const DEFAULT_STYLE: Style = {
   mood: 'glass',
   glass: 62,
   roundness: 34,
+  depth: 60,
   disc: 'classic',
 };
 
@@ -117,6 +125,7 @@ function load(): Style {
     if (typeof p.disc === 'string' && p.disc in DISCS) out.disc = p.disc as DiscId;
     if (typeof p.glass === 'number' && Number.isFinite(p.glass)) out.glass = clamp(Math.round(p.glass), 0, 100);
     if (typeof p.roundness === 'number' && Number.isFinite(p.roundness)) out.roundness = clamp(Math.round(p.roundness), 8, 34);
+    if (typeof p.depth === 'number' && Number.isFinite(p.depth)) out.depth = clamp(Math.round(p.depth), 0, 100);
     return out;
   } catch {
     return DEFAULT_STYLE;
@@ -162,6 +171,12 @@ export function styleVars(style: Style, accentFromTrack?: string): CSSProperties
   // over as plain numbers rather than a multiplier, because calc() inside rgba()
   // is exactly the sort of thing older Android WebViews get wrong.
   const fill = 0.34 + (clamp(style.glass, 0, 100) / 100) * 1.16;
+  // The depth slider, as a 0–1 multiplier for the tilt and parallax, and as three
+  // plain alpha numbers for the shadow layers. Handing rgba() a calc() is the one
+  // thing older Android WebViews reliably get wrong, so the numbers are computed
+  // here and passed as plain values.
+  const depth = clamp(style.depth, 0, 100) / 100;
+  const shade = 0.35 + 0.65 * depth;
   return {
     '--accent': accent,
     '--bg-a': m.a,
@@ -177,6 +192,10 @@ export function styleVars(style: Style, accentFromTrack?: string): CSSProperties
     '--g2': (0.09 * fill).toFixed(3),
     '--g3': (0.13 * fill).toFixed(3),
     '--g4': (0.22 * fill).toFixed(3),
+    '--depth': depth.toFixed(2),
+    '--sh-near': (0.3 * shade).toFixed(3),
+    '--sh-mid': (0.32 * shade).toFixed(3),
+    '--sh-far': (0.55 * shade).toFixed(3),
     '--r-xl': `${style.roundness}px`,
     '--r-lg': `${Math.round(style.roundness * 0.76)}px`,
     '--r-md': `${Math.round(style.roundness * 0.53)}px`,
@@ -185,7 +204,7 @@ export function styleVars(style: Style, accentFromTrack?: string): CSSProperties
 
 /** A short, human summary of the current look — handy for tests and tooltips. */
 export function styleSummary(style: Style): string {
-  return `${MOODS[style.mood]?.label ?? 'Liquid Glass'} · ${style.accent} · glass ${style.glass} · ${style.roundness}px · ${DISCS[style.disc]?.label}`;
+  return `${MOODS[style.mood]?.label ?? 'Liquid Glass'} · ${style.accent} · glass ${style.glass} · ${style.roundness}px · depth ${style.depth} · ${DISCS[style.disc]?.label}`;
 }
 
 export function useStyleSummary(style: Style) {
