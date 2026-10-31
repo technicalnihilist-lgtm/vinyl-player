@@ -4,6 +4,7 @@ import { useReducedMotion } from './hooks/useReducedMotion';
 import { useSettings } from './hooks/useSettings';
 import { useStyle, styleVars } from './hooks/useStyle';
 import { useSheen } from './hooks/useSheen';
+import { useDepth } from './hooks/useDepth';
 import { AmbientBackground } from './components/AmbientBackground';
 import { Vinyl } from './components/Vinyl';
 import { Visualizer } from './components/Visualizer';
@@ -40,6 +41,8 @@ export default function App() {
   const panelRef = useRef<HTMLElement | null>(null);
 
   useSheen(panelRef);
+  // 4D: the record leans with the phone, or with the pointer on a desktop.
+  useDepth(!reducedMotion && settings.glass);
 
   const openImporter = useCallback(() => fileRef.current?.click(), []);
   const openFolderImporter = useCallback(() => folderRef.current?.click(), []);
