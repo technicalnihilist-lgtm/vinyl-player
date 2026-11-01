@@ -63,11 +63,23 @@ export function usePlayer(initialTracks: Track[] = TRACKS) {
     scanning: false,
   }));
 
+  /** The library the reducer was last given, so an identical rescan is skipped. */
+  const lastLibraryRef = useRef<Track[] | null>(null);
+
   /** Pull the device's music library (Android) into the playlist. */
   const syncLibrary = useCallback(() => {
     if (!hasDeviceLibrary()) return;
     const snapshot = readDeviceLibrary();
-    setLibrary({ available: true, permission: snapshot.permission, scanning: snapshot.scanning });
+    setLibrary((prev) =>
+      prev.permission === snapshot.permission && prev.scanning === snapshot.scanning
+        ? prev
+        : { available: true, permission: snapshot.permission, scanning: snapshot.scanning },
+    );
+    // The same array means the shell's payload had not changed since the last
+    // scan. Dispatching anyway would rebuild the playlist — and re-render every
+    // row — to show a list identical to the one already on screen.
+    if (snapshot.tracks === lastLibraryRef.current) return;
+    lastLibraryRef.current = snapshot.tracks;
     dispatch({ type: 'SET_LIBRARY', tracks: snapshot.tracks });
   }, []);
 

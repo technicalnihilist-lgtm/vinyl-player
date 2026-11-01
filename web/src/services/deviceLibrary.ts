@@ -112,18 +112,33 @@ export interface DeviceLibrarySnapshot {
   scanning: boolean;
 }
 
+const EMPTY_SNAPSHOT: DeviceLibrarySnapshot = { tracks: [], permission: 'unknown', scanning: false };
+
+/** The last payload the shell handed over, and what we made of it. */
+let lastRaw: string | null = null;
+let lastSnapshot: DeviceLibrarySnapshot = EMPTY_SNAPSHOT;
+
 export function readDeviceLibrary(): DeviceLibrarySnapshot {
   const bridge = deviceBridge();
-  if (!bridge) return { tracks: [], permission: 'unknown', scanning: false };
+  if (!bridge) return EMPTY_SNAPSHOT;
   try {
-    const payload = JSON.parse(bridge.getLibrary()) as NativePayload & { scanning?: boolean };
-    return {
+    const raw = bridge.getLibrary();
+    // The shell hands the whole library over as one JSON string, and it rescans
+    // every time the app comes back to the foreground. Parsing and mapping a few
+    // hundred tracks to arrive at exactly the same list is pure work, so an
+    // unchanged payload returns the previous snapshot — including the very same
+    // track array, which is what lets the player skip the update altogether.
+    if (raw === lastRaw) return lastSnapshot;
+    const payload = JSON.parse(raw) as NativePayload & { scanning?: boolean };
+    lastRaw = raw;
+    lastSnapshot = {
       tracks: mapDeviceTracks(payload),
       permission: (payload?.permission as LibraryPermission) ?? 'unknown',
       scanning: Boolean(payload?.scanning),
     };
+    return lastSnapshot;
   } catch {
-    return { tracks: [], permission: 'unknown', scanning: false };
+    return EMPTY_SNAPSHOT;
   }
 }
 
