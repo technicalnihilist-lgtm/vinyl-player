@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import type { AudioEngine } from '../audio/engine';
 
 const BARS = 36;
@@ -40,7 +40,7 @@ interface Props {
  * playing — a paused player has no reason to wake the browser 30 times a second
  * to draw a picture that is not changing — and playback starts it again.
  */
-export function Visualizer({ engine, isPlaying, reducedMotion }: Props) {
+export const Visualizer = memo(function Visualizer({ engine, isPlaying, reducedMotion }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const levelsRef = useRef<number[]>(new Array(BARS).fill(0));
   const playingRef = useRef(isPlaying);
@@ -251,4 +251,4 @@ export function Visualizer({ engine, isPlaying, reducedMotion }: Props) {
       )}
     </div>
   );
-}
+});

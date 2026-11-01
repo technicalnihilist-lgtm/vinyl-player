@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { CSSProperties } from 'react';
 import type { Track } from '../types';
 import { Artwork } from './Artwork';
@@ -17,8 +18,12 @@ interface Props {
  *
  * Rotation is a pure CSS animation whose play-state follows `isPlaying`, which
  * means pausing freezes the current angle and resuming continues from it.
+ *
+ * Memoised: the app re-renders several times a second while a song plays, because
+ * the position lives in the same state. None of this component's props change
+ * with the position, so there is no reason to rebuild the disc for it.
  */
-export function Vinyl({ track, isPlaying, reducedMotion, spin = true }: Props) {
+export const Vinyl = memo(function Vinyl({ track, isPlaying, reducedMotion, spin = true }: Props) {
   const spinning = isPlaying && !reducedMotion && spin;
 
   return (
@@ -37,4 +42,4 @@ export function Vinyl({ track, isPlaying, reducedMotion, spin = true }: Props) {
       </div>
     </div>
   );
-}
+});
