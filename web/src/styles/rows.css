@@ -1,0 +1,30 @@
+/* ------------------------------------------------------------- row heights
+ *
+ * Rows outside the viewport are skipped — `content-visibility: auto` in
+ * app.css — which means the list has to be told how tall a skipped row is. It
+ * was told 52px, which is neither the normal row (68px) nor the compact one
+ * (50px, or 44px on a narrow screen). The list's total height was therefore
+ * computed from the wrong number, so the scrollbar lied and the scroll position
+ * shifted every time rows came into view in a long library.
+ *
+ * The real heights are declared here as one custom property that the
+ * placeholder reads, so there is a single number to keep true and it is the
+ * same number the rows actually are. This file is imported after app.css, so it
+ * supersedes the 52px placeholder there.
+ */
+.track-row {
+  --row-h: 68px;
+  contain-intrinsic-size: auto var(--row-h);
+}
+
+/* A compact row is 38px of art plus 6px of padding either side. */
+.playlist__list.is-compact .track-row {
+  --row-h: 50px;
+}
+
+/* ...and on a narrow screen it is 34px of art plus 5px either side. */
+@media (max-width: 560px) {
+  .playlist__list.is-compact .track-row {
+    --row-h: 44px;
+  }
+}
