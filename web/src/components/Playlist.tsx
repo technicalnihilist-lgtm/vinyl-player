@@ -27,6 +27,9 @@ interface Props {
 
 type Filter = 'all' | 'liked';
 
+/** A stable empty map, so the Library tab never depends on the liked list. */
+const NO_LIKES: Record<string, boolean> = {};
+
 export const Playlist = memo(function Playlist({
   filter: filterProp,
   tracks,
@@ -56,16 +59,22 @@ export const Playlist = memo(function Playlist({
 
   useSheen(listRef);
 
+  // On the Library tab the liked map plays no part in the filter, so it must play
+  // no part in the memo either: liking one song used to rebuild the whole visible
+  // list — a map and a filter across the entire library, plus a fresh object for
+  // every row — in order to show exactly the same rows.
+  const likesForFilter = filter === 'liked' ? liked : NO_LIKES;
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     return tracks
       .map((track, index) => ({ track, index }))
       .filter(
         ({ track }) =>
-          (filter === 'all' || liked[track.id]) &&
+          (filter === 'all' || likesForFilter[track.id]) &&
           (!q || track.title.toLowerCase().includes(q) || track.artist.toLowerCase().includes(q)),
       );
-  }, [tracks, query, filter, liked]);
+  }, [tracks, query, filter, likesForFilter]);
 
   const rowFor = useCallback((id: string) => {
     const list = listRef.current;
