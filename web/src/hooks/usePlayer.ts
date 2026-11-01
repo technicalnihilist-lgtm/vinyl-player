@@ -25,6 +25,9 @@ const IMPORT_PALETTES: [string, string, string][] = [
   ['#8e2de2', '#4a00e0', '#c4b5fd'],
 ];
 
+/** How many files are probed at once when a batch is imported. */
+const IMPORT_CONCURRENCY = 6;
+
 /** Read a file's duration from its audio metadata (never guessed). */
 function readDuration(url: string): Promise<number> {
   return new Promise((resolve) => {
@@ -289,24 +292,36 @@ export function usePlayer(initialTracks: Track[] = TRACKS) {
     );
     if (!list.length) return 0;
     const stamp = Date.now();
-    const tracks: Track[] = [];
-    for (let i = 0; i < list.length; i++) {
-      const file = list[i];
-      const url = URL.createObjectURL(file);
-      const duration = await readDuration(url);
+
+    // Reading durations one at a time meant a folder of a hundred songs was a
+    // hundred metadata reads in single file, each waiting for the one before it.
+    // Six at a time is parallel without opening a hundred decoders at once, and
+    // the rows still come out in the order the files were picked.
+    const urls = list.map((file) => URL.createObjectURL(file));
+    const durations = new Array<number>(urls.length).fill(0);
+    let next = 0;
+    const probe = async () => {
+      while (next < urls.length) {
+        const i = next++;
+        durations[i] = await readDuration(urls[i]);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(IMPORT_CONCURRENCY, urls.length) }, probe));
+
+    const tracks: Track[] = list.map((file, i) => {
       const palette = IMPORT_PALETTES[i % IMPORT_PALETTES.length];
-      tracks.push({
+      return {
         id: `import-${stamp}-${i}`,
         title: file.name.replace(/\.[^.]+$/, ''),
         artist: 'Imported',
         album: 'My Library',
-        src: url,
-        duration,
+        src: urls[i],
+        duration: durations[i],
         palette,
         artwork: coverGradient(palette, (stamp + i) % 900 + 50),
         source: 'import',
-      });
-    }
+      };
+    });
     dispatch({ type: 'ADD_TRACKS', tracks });
     return tracks.length;
   }, []);
