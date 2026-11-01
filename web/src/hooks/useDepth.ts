@@ -60,15 +60,23 @@ export function useDepth(enabled: boolean): void {
       kick();
     };
 
-    const hasGyro = typeof DeviceOrientationEvent !== 'undefined';
-    if (hasGyro) window.addEventListener('deviceorientation', onOrient);
-    window.addEventListener('pointermove', onPointer, { passive: true });
+    // One source, not two. `DeviceOrientationEvent` is defined in every Android
+    // WebView, so on a phone both listeners used to be live at once: the
+    // gyroscope set the target, and then every finger movement during a scroll
+    // overwrote it from the touch position and kicked a fresh rAF chain. The
+    // record twitched while you scrolled the list. A fine pointer drives the
+    // tilt from the pointer; a touch screen drives it from the gyroscope.
+    const finePointer =
+      typeof window.matchMedia === 'function' && window.matchMedia('(pointer: fine)').matches;
+    const useGyro = !finePointer && typeof DeviceOrientationEvent !== 'undefined';
+    if (useGyro) window.addEventListener('deviceorientation', onOrient);
+    if (finePointer) window.addEventListener('pointermove', onPointer, { passive: true });
 
     return () => {
       alive = false;
       if (raf) cancelAnimationFrame(raf);
-      if (hasGyro) window.removeEventListener('deviceorientation', onOrient);
-      window.removeEventListener('pointermove', onPointer);
+      if (useGyro) window.removeEventListener('deviceorientation', onOrient);
+      if (finePointer) window.removeEventListener('pointermove', onPointer);
       root.style.removeProperty('--tilt-x');
       root.style.removeProperty('--tilt-y');
     };
