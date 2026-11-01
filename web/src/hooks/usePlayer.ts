@@ -33,8 +33,20 @@ function readDuration(url: string): Promise<number> {
   return new Promise((resolve) => {
     const probe = new Audio();
     probe.preload = 'metadata';
+    let settled = false;
     const finish = (d: number) => {
+      if (settled) return;
+      settled = true;
+      // Dropping the src is not enough on its own: the element keeps whatever it
+      // was handed until it is told to let go, so every imported file left a
+      // media resource behind for the life of the page. load() with no src
+      // releases it.
       probe.removeAttribute('src');
+      try {
+        probe.load();
+      } catch {
+        /* ignore — the resource goes when the element does */
+      }
       resolve(d);
     };
     const timer = window.setTimeout(() => finish(0), 8000);
