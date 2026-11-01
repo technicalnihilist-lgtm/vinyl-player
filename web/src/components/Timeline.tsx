@@ -6,10 +6,16 @@ interface Props {
   current: number;
   duration: number;
   onSeek: (time: number) => void;
+  /**
+   * Move the audio without publishing the position. Used during a drag: the rail
+   * is already showing the preview, so publishing every pointermove only made the
+   * whole app re-render for a value nothing was reading.
+   */
+  onScrub?: (time: number) => void;
 }
 
 /** Seekable progress bar. Position always comes from the audio element. */
-export function Timeline({ current, duration, onSeek }: Props) {
+export function Timeline({ current, duration, onSeek, onScrub }: Props) {
   const railRef = useRef<HTMLDivElement | null>(null);
   const [dragging, setDragging] = useState(false);
   const [preview, setPreview] = useState(0);
@@ -34,12 +40,14 @@ export function Timeline({ current, duration, onSeek }: Props) {
     if (!dragging) return;
     const t = timeFromClientX(e.clientX);
     setPreview(t);
-    onSeek(t);
+    (onScrub ?? onSeek)(t);
   };
   const onPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!dragging) return;
     setDragging(false);
     e.currentTarget.releasePointerCapture?.(e.pointerId);
+    // One published position for the whole drag, where the finger let go.
+    onSeek(timeFromClientX(e.clientX));
   };
 
   const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {

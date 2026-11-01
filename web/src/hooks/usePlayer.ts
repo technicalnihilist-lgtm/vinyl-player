@@ -268,6 +268,26 @@ export function usePlayer(initialTracks: Track[] = TRACKS) {
     [engine],
   );
 
+  /**
+   * Move the audio while a seek drag is in progress.
+   *
+   * Deliberately silent: the bar is already drawing the drag preview, so nothing
+   * on screen reads the published position mid-drag — and a position change
+   * re-renders the whole app, which a drag would do sixty times a second. The
+   * drag publishes once, when it ends.
+   */
+  const scrub = useCallback(
+    (time: number) => {
+      const t = clampTime(time, stateRef.current.duration);
+      try {
+        engine.el.currentTime = t;
+      } catch {
+        /* ignore */
+      }
+    },
+    [engine],
+  );
+
   const setVolume = useCallback((v: number) => dispatch({ type: 'SET_VOLUME', volume: v }), []);
   const toggleMute = useCallback(() => dispatch({ type: 'TOGGLE_MUTE' }), []);
   const toggleShuffle = useCallback(() => dispatch({ type: 'TOGGLE_SHUFFLE' }), []);
@@ -349,6 +369,7 @@ export function usePlayer(initialTracks: Track[] = TRACKS) {
       prev,
       selectTrack,
       seek,
+      scrub,
       setVolume,
       toggleMute,
       toggleShuffle,
@@ -369,6 +390,7 @@ export function usePlayer(initialTracks: Track[] = TRACKS) {
       prev,
       selectTrack,
       seek,
+      scrub,
       setVolume,
       toggleMute,
       toggleShuffle,

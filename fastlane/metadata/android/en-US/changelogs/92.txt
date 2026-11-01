@@ -1,0 +1,4 @@
+The visualiser now stops drawing when nothing is playing, and the bars are drawn in two fills instead of seventy-two.
+A long library no longer drifts while you scroll it, and the record no longer twitches as you scroll.
+Coming back to the app no longer re-reads the whole music library, and importing a folder is several times quicker.
+Dragging the seek bar no longer re-renders the app sixty times a second.

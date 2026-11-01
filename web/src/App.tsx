@@ -256,7 +256,12 @@ export default function App() {
           )}
 
           <div className="panel__foot">
-            <Timeline current={state.currentTime} duration={state.duration} onSeek={actions.seek} />
+            <Timeline
+              current={state.currentTime}
+              duration={state.duration}
+              onSeek={actions.seek}
+              onScrub={actions.scrub}
+            />
 
             <div className="transport-row">
               <button
