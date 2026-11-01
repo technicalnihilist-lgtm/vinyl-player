@@ -11,9 +11,9 @@ const SILENT = 0.006;
 /** Below this a bar has stopped moving: repainting it would draw the same picture. */
 const STILL = 0.002;
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+/** Adds one rounded bar to the current path. The caller owns beginPath(). */
+function barPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   const radius = Math.min(r, w / 2, h / 2);
-  ctx.beginPath();
   ctx.moveTo(x + radius, y);
   ctx.arcTo(x + w, y, x + w, y + h, radius);
   ctx.arcTo(x + w, y + h, x, y + h, radius);
@@ -108,23 +108,29 @@ export function Visualizer({ engine, isPlaying, reducedMotion }: Props) {
       ctx.clearRect(0, 0, width, height);
       if (!grad) buildGradients();
 
+      // One path and one fill per pass. Every bar used to begin its own path,
+      // round four corners and fill on its own — up to 72 fills in a frame for a
+      // picture that is one colour. The bars share a single vertical gradient, so
+      // they can be one path filled once, and the pixels are identical.
+      ctx.beginPath();
       for (let i = 0; i < BARS; i++) {
         const level = Math.min(1, levels[i]);
         if (level < 0.012) continue;
         const h = Math.max(3, Math.pow(level, 0.82) * maxH);
-        roundRect(ctx, i * (barW + gap), baseline - h, barW, h, barW / 2);
-        ctx.fillStyle = grad as CanvasGradient;
-        ctx.fill();
+        barPath(ctx, i * (barW + gap), baseline - h, barW, h, barW / 2);
       }
+      ctx.fillStyle = grad as CanvasGradient;
+      ctx.fill();
 
+      ctx.beginPath();
       for (let i = 0; i < BARS; i++) {
         const level = Math.min(1, levels[i]);
         if (level < 0.03) continue;
         const h = Math.max(2, Math.pow(level, 0.82) * maxH) * 0.6;
-        roundRect(ctx, i * (barW + gap), baseline + 6, barW, h, barW / 2);
-        ctx.fillStyle = reflect as CanvasGradient;
-        ctx.fill();
+        barPath(ctx, i * (barW + gap), baseline + 6, barW, h, barW / 2);
       }
+      ctx.fillStyle = reflect as CanvasGradient;
+      ctx.fill();
     };
 
     /**
