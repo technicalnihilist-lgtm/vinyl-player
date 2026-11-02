@@ -12,10 +12,12 @@ import {
   type LibraryPermission,
 } from '../services/deviceLibrary';
 import { initState, playerReducer } from '../state/player';
-import { loadLikes, saveLikes } from '../state/likes';
+import { LIKES_KEY, likedEntries, loadLikes } from '../state/likes';
+import { mergeLibrary } from '../state/library';
 import type { Track } from '../types';
 import { coverGradient } from '../utils/artwork';
 import { clampTime } from '../utils/format';
+import { firstRun, persistSoon } from '../utils/persist';
 
 const IMPORT_PALETTES: [string, string, string][] = [
   ['#7b2ff7', '#f107a3', '#ffd166'],
@@ -77,17 +79,14 @@ export function usePlayer(initialTracks: Track[] = TRACKS) {
   const loadedIdRef = useRef<string | null>(null);
   const switchingRef = useRef(false);
 
-  // Keep the hearts. Debounced, like the settings and the style: liking a song
-  // is one write, and tapping through a few of them is one write a moment later
-  // rather than one per tap.
-  const likedSaved = useRef<unknown>(null);
+  // Keep the hearts. Debounced, like the settings and the style: liking a song is
+  // one write, and tapping through a few of them is one write a moment later
+  // rather than one per tap. Silent on the first run, which is the set that was
+  // just read back.
+  const likedStored = useRef(false);
   useEffect(() => {
-    if (state.liked === likedSaved.current) return;
-    const first = likedSaved.current === null;
-    likedSaved.current = state.liked;
-    if (first) return; // nothing has been changed yet — the store is already right
-    const t = window.setTimeout(() => saveLikes(state.liked), 250);
-    return () => window.clearTimeout(t);
+    if (firstRun(likedStored)) return undefined;
+    return persistSoon(LIKES_KEY, likedEntries(state.liked));
   }, [state.liked]);
 
   const [library, setLibrary] = useState<{ available: boolean; permission: LibraryPermission; scanning: boolean }>(() => ({
@@ -113,7 +112,10 @@ export function usePlayer(initialTracks: Track[] = TRACKS) {
     // row — to show a list identical to the one already on screen.
     if (snapshot.tracks === lastLibraryRef.current) return;
     lastLibraryRef.current = snapshot.tracks;
-    dispatch({ type: 'SET_LIBRARY', tracks: snapshot.tracks });
+    // The shell rescans every time the app comes back to the foreground, and a
+    // rescan only knows about the phone's own music. Replacing the list outright
+    // took the songs added by hand with it, so the two are merged instead.
+    dispatch({ type: 'SET_LIBRARY', tracks: mergeLibrary(snapshot.tracks, stateRef.current.tracks) });
   }, []);
 
   useEffect(() => {

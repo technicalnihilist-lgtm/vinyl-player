@@ -1,0 +1,4 @@
+The arrows follow the list you are looking at, and the hearts are remembered between launches.
+A seek you did not finish no longer throws the song back to the start.
+Songs added by hand no longer disappear when the app rescans the phone's library.
+Fewer disk writes on open, fewer re-renders while a song plays, less work per track change.
