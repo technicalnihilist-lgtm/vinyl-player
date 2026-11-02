@@ -6,6 +6,7 @@ import { useSheen } from '../hooks/useSheen';
 import { FolderIcon, PlusIcon, RefreshIcon, SearchIcon } from './Icons';
 import type { Tab } from './TabBar';
 import { stepVisible } from '../utils/playlist';
+import { filterTracks } from '../utils/filter';
 
 interface Props {
   /** Which tab is showing. Owned by the app, drawn by the bottom tab bar. */
@@ -66,16 +67,11 @@ export const Playlist = memo(function Playlist({
   // every row — in order to show exactly the same rows.
   const likesForFilter = filter === 'liked' ? liked : NO_LIKES;
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return tracks
-      .map((track, index) => ({ track, index }))
-      .filter(
-        ({ track }) =>
-          (filter === 'all' || likesForFilter[track.id]) &&
-          (!q || track.title.toLowerCase().includes(q) || track.artist.toLowerCase().includes(q)),
-      );
-  }, [tracks, query, filter, likesForFilter]);
+  // One pass, allocating only for the rows that survive — see utils/filter.ts.
+  const visible = useMemo(
+    () => filterTracks(tracks, query, filter, likesForFilter),
+    [tracks, query, filter, likesForFilter],
+  );
 
   /** The library indices of the rows on screen, in display order. */
   const visibleIndices = useMemo(() => visible.map((row) => row.index), [visible]);
