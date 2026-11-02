@@ -102,3 +102,57 @@ describe('playerReducer track transitions', () => {
     expect([...s.order].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4]);
   });
 });
+
+describe('step() without shuffle', () => {
+  // The play order is the library order, so the neighbour must be readable
+  // straight off the index. This checks the shortcut against the long way —
+  // build the whole order, then walk it — over every combination that matters.
+  const slowStep = (state: PlayerState, dir: 1 | -1, atEnd: boolean) => {
+    const total = state.tracks.length;
+    if (total === 0) return { index: 0, stop: true, replay: false };
+    if (total === 1) {
+      if (dir === 1 && atEnd) {
+        return state.repeat === 'one' || state.repeat === 'all'
+          ? { index: 0, stop: false, replay: true }
+          : { index: 0, stop: true, replay: false };
+      }
+      return { index: 0, stop: false, replay: false };
+    }
+    if (dir === 1 && atEnd && state.repeat === 'one') {
+      return { index: state.currentIndex, stop: false, replay: true };
+    }
+    const order = Array.from({ length: total }, (_, i) => i);
+    const pos = order.indexOf(state.currentIndex);
+    let nextPos = pos + dir;
+    if (nextPos >= order.length) {
+      if (state.repeat === 'all') nextPos = 0;
+      else if (atEnd) return { index: state.currentIndex, stop: true, replay: false };
+      else nextPos = order.length - 1;
+    }
+    if (nextPos < 0) nextPos = state.repeat === 'all' ? order.length - 1 : 0;
+    return { index: order[nextPos], stop: false, replay: false };
+  };
+
+  it('agrees with walking the built order, for every case', () => {
+    for (const n of [0, 1, 2, 3, 5]) {
+      for (const currentIndex of [0, 1, 2, 4]) {
+        for (const repeat of ['off', 'all', 'one'] as const) {
+          for (const dir of [1, -1] as const) {
+            for (const atEnd of [false, true]) {
+              const state = base(n, { currentIndex: Math.min(currentIndex, Math.max(0, n - 1)), repeat });
+              expect(step(state, dir, atEnd)).toEqual(slowStep(state, dir, atEnd));
+            }
+          }
+        }
+      }
+    }
+  });
+
+  it('still walks the shuffled order when shuffle is on', () => {
+    const state = base(4, { shuffle: true, order: [2, 0, 3, 1], currentIndex: 2 });
+    expect(step(state, 1, false).index).toBe(0);
+    // First in the shuffled order, repeat off: there is nowhere before it.
+    expect(step(state, -1, false).index).toBe(2);
+    expect(step(base(4, { shuffle: true, order: [2, 0, 3, 1], currentIndex: 2, repeat: 'all' }), -1, false).index).toBe(1);
+  });
+});

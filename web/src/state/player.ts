@@ -93,20 +93,26 @@ export function step(state: PlayerState, dir: 1 | -1, atEnd: boolean): StepResul
     return { index: state.currentIndex, stop: false, replay: true };
   }
 
-  const order = activeOrder(state);
-  const pos = order.indexOf(state.currentIndex);
+  // With shuffle off the play order is the library order, index for index, so
+  // the neighbour can be read straight off the current index. Building the order
+  // first meant every next/previous allocated an array as long as the library —
+  // five thousand entries on a full phone — to answer a single step, and then
+  // handed it to the collector.
+  const order = state.shuffle ? state.order : null;
+  const length = order ? order.length : total;
+  const pos = order ? order.indexOf(state.currentIndex) : state.currentIndex;
   let nextPos = pos + dir;
 
-  if (nextPos >= order.length) {
+  if (nextPos >= length) {
     if (state.repeat === 'all') nextPos = 0;
     else if (atEnd) return { index: state.currentIndex, stop: true, replay: false };
-    else nextPos = order.length - 1; // manual "next" at the end, repeat off → stay put
+    else nextPos = length - 1; // manual "next" at the end, repeat off → stay put
   }
   if (nextPos < 0) {
-    nextPos = state.repeat === 'all' ? order.length - 1 : 0;
+    nextPos = state.repeat === 'all' ? length - 1 : 0;
   }
 
-  return { index: order[nextPos], stop: false, replay: false };
+  return { index: order ? order[nextPos] : nextPos, stop: false, replay: false };
 }
 
 const trackDuration = (tracks: Track[], index: number): number => tracks[index]?.duration ?? 0;
