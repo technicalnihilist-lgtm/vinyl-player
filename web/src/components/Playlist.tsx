@@ -5,6 +5,7 @@ import { TrackRow } from './TrackRow';
 import { useSheen } from '../hooks/useSheen';
 import { FolderIcon, PlusIcon, RefreshIcon, SearchIcon } from './Icons';
 import type { Tab } from './TabBar';
+import { stepVisible } from '../utils/playlist';
 
 interface Props {
   /** Which tab is showing. Owned by the app, drawn by the bottom tab bar. */
@@ -76,6 +77,9 @@ export const Playlist = memo(function Playlist({
       );
   }, [tracks, query, filter, likesForFilter]);
 
+  /** The library indices of the rows on screen, in display order. */
+  const visibleIndices = useMemo(() => visible.map((row) => row.index), [visible]);
+
   const rowFor = useCallback((id: string) => {
     const list = listRef.current;
     if (!list) return null;
@@ -136,13 +140,13 @@ export const Playlist = memo(function Playlist({
   };
 
   const onKeyDown = (e: ReactKeyboardEvent<HTMLUListElement>) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      onSelect(Math.min(tracks.length - 1, currentIndex + 1));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      onSelect(Math.max(0, currentIndex - 1));
-    }
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    e.preventDefault();
+    // Through the rows on screen, not through the library: with a tab or a
+    // search filtering the list, stepping by one in the library moved the
+    // selection to a song that was not showing.
+    const next = stepVisible(visibleIndices, currentIndex, e.key === 'ArrowDown' ? 1 : -1);
+    if (next !== null) onSelect(next);
   };
 
   return (
