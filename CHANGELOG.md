@@ -7,6 +7,163 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 102 — 2 November 2026
+
+**Songs you added by hand no longer vanish when the app rescans the library.**
+
+The Android shell rescans the phone's music every time the app comes back to the
+foreground, and a rescan replaces the playlist with what it found. What it found
+is only ever the phone's own music — so a folder of files you had added by hand
+was wiped out of the list the next time you unlocked your phone and came back.
+The imported tracks are kept now, appended after the device's, with nothing
+duplicated and no track appearing twice.
+
+The same guard covers the other direction: if a rescan comes back empty (the
+permission was revoked, or the scan found nothing), the imported songs are still
+there instead of the whole list — and whatever was playing — being cleared.
+
+## 101 — 2 November 2026
+
+**Dragging the progress bar no longer forces a layout on every move.**
+
+The rail's box was measured inside the function that turns a finger position
+into a time — so every `pointermove` called `getBoundingClientRect`, which is a
+forced synchronous layout, and then set state, and then seeked the audio element.
+A drag across the bar did that a hundred times, in the middle of the most
+latency-sensitive gesture in the app.
+
+The box is now measured once, when the drag starts, and again once when it ends.
+The position is applied at most once a frame through `requestAnimationFrame`, so a
+pointer that reports faster than the screen refreshes — a stylus, a 240 Hz touch
+panel — no longer queues up seeks the audio element has to work through. Nothing
+moves on screen any earlier than a frame could have shown it.
+
+## 100 — 2 November 2026
+
+**The playback tick no longer rebuilds the interface around it.**
+
+The position lives in the player state, and it lands there several times a
+second, so the whole app re-renders just as often. Everything in that re-render
+that does not depend on the position was being rebuilt anyway: the settings
+sheet — all six switches and the entire Style panel, 144 elements on its own —
+the tab bar, the options bar and the ambient background, 183 elements in total,
+four or more times a second, for a number that only the progress bar reads.
+
+Those four are memoised components now, and the handlers they are given are
+stable (`useCallback`) so the memo can actually take effect. The count above is
+measured: the four components rendered to markup and their elements counted.
+
+## 99 — 2 November 2026
+
+**Reduced motion is respected from the first frame.**
+
+The setting was read in an effect that ran after the first paint, so the app
+started in its full-motion state and corrected itself a frame later. Anyone who
+has told their phone to reduce motion got the launch animation, the drifting
+glass and the record's spin for that frame — and paid for a re-render and a style
+recalc to switch it all off again. The answer is now read synchronously, before
+the first render, so nothing is animated unless it should be.
+
+The change listener also falls back to `addListener` where `addEventListener` is
+missing on a `MediaQueryList`, which is the case on the older WebViews the app
+still supports — there the listener was silently never attached, so toggling the
+system setting while the app was open did nothing.
+
+## 98 — 2 November 2026
+
+**The list is filtered in one pass.**
+
+Building the visible rows went through every song twice: once to wrap it as
+`{ track, index }`, once to throw most of those wrappers away. On a library of a
+few thousand songs that is a few thousand short-lived objects per keystroke, all
+of them straight into the young generation for the collector to sweep.
+
+It is one loop now, allocating only for the rows that survive. Measured on a
+5,000-track library over 1,000 filter calls: 0.680 ms per call becomes 0.528 ms
+(1.29×), and the wrappers created per call fall from 5,000 to 1,602 — the number
+that actually match. A test asserts the new function returns exactly what the old
+one did, across the empty query, a title match, an artist match, the Liked tab
+and both together.
+
+## 97 — 2 November 2026
+
+**Changing track no longer builds the whole play order to answer one step.**
+
+`step()` — what "next", "previous" and the end of a track all go through — built
+the play order first and then walked it. With shuffle off that order is the
+library order, index for index, so the array was built only to be indexed once:
+an array as long as the library, allocated and thrown away on every track change.
+
+Measured on a 5,000-track library over 200,000 steps: 575 µs per step building
+the order becomes 62 ns reading the index — 9,241× — and 39 KB of array per press
+is no longer allocated at all. The shuffled path is untouched: with shuffle on
+the order really is arbitrary, and it is still walked exactly as before.
+
+A test walks every combination of library size, position, direction, repeat mode
+and end-of-track against the old implementation, so the shortcut is proven to
+return the same step in every case.
+
+## 96 — 2 November 2026
+
+**Opening the app no longer writes the settings it just read.**
+
+Both stores ran their save effect the moment the app mounted — with the value
+they had loaded a millisecond earlier. So every launch cost two disk writes (the
+settings and the style) to store exactly what was already there, before the
+listener had touched anything.
+
+The first run is now skipped, and the debounce moved into one shared, tested
+helper (`utils/persist.ts`) used by all three stores — settings, style and the
+hearts. One place that decides when a write happens, instead of three copies of
+the same timer.
+
+## 95 — 2 November 2026
+
+**The hearts are remembered.**
+
+Liking a song was the one thing in the player that was purely the listener's own
+opinion, and it was the one thing never saved: the heart filled in, the Liked tab
+filled up, and closing the app threw all of it away. The likes now live in the
+local store beside the settings and the style, under the same rules — only
+`id: true` entries are written, and anything that is not a real like is ignored
+when it is read back, so a half-written entry cannot un-like a song.
+
+The write is debounced by a quarter of a second, so tapping through a dozen
+hearts is one write rather than a dozen, and it does not write at all until
+something has actually been changed.
+
+## 94 — 2 November 2026
+
+**The arrow keys move through the list you are looking at.**
+
+The playlist steps by one through the library when you press up or down. With a
+tab or a search filtering the list, "one more in the library" is a song that is
+not on screen: three search results showing, down arrow pressed, and the
+selection landed on a fourth track that was not one of them — the lens vanished
+and the list scrolled to a row that was not there.
+
+Stepping now happens through the rows actually visible, in display order, and
+stops at either end rather than wrapping. If the playing track has been filtered
+away, the first press lands on the nearest visible row in the direction you are
+going, so the key always does something you can see.
+
+The step itself is a pure function in `utils/playlist.ts` with its own tests.
+
+## 93 — 2 November 2026
+
+**A seek you did not finish no longer throws the song back to the start.**
+
+Letting go of the progress bar publishes where the finger was. A gesture the
+system takes away — an incoming call, a swipe in from the edge, the notification
+shade coming down over the bar — arrives as `pointercancel` instead, and that
+event carries no position at all: its `clientX` is 0. The bar treated it exactly
+like a release, so it seeked to zero and the track audibly restarted. A cancelled
+drag now ends where the finger last was.
+
+The rail arithmetic also moved into `utils/timeline.ts`, a pure function with its
+own tests: a pointer past either end clamps to that end, and a rail that has not
+been laid out yet resolves to the start of the track rather than `NaN`.
+
 ## 74 — 25 October 2026
 
 **The options live in one floating bar, and nowhere else.**
@@ -83,7 +240,7 @@ Three more optimisations:
 **Every build is signed with the upload key now.**
 
 This is the one that matters. Until now the workflow never handed `build.sh` an
-upload key, so every release fell back to a throwaway debug key — **and a
+uplaod key, so every release fell back to a throwaway debug key — **and a
 different one each run**:
 
 ```
