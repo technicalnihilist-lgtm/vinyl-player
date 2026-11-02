@@ -12,6 +12,7 @@ import {
   type LibraryPermission,
 } from '../services/deviceLibrary';
 import { initState, playerReducer } from '../state/player';
+import { loadLikes, saveLikes } from '../state/likes';
 import type { Track } from '../types';
 import { coverGradient } from '../utils/artwork';
 import { clampTime } from '../utils/format';
@@ -65,12 +66,29 @@ function readDuration(url: string): Promise<number> {
 
 export function usePlayer(initialTracks: Track[] = TRACKS) {
   const [engine] = useState(() => new AudioEngine());
-  const [state, dispatch] = useReducer(playerReducer, initialTracks, initState);
+  const [state, dispatch] = useReducer(playerReducer, initialTracks, (tracks) => ({
+    ...initState(tracks),
+    // The hearts the listener already gave, from the last time the app ran.
+    liked: loadLikes(),
+  }));
 
   const stateRef = useRef(state);
   stateRef.current = state;
   const loadedIdRef = useRef<string | null>(null);
   const switchingRef = useRef(false);
+
+  // Keep the hearts. Debounced, like the settings and the style: liking a song
+  // is one write, and tapping through a few of them is one write a moment later
+  // rather than one per tap.
+  const likedSaved = useRef<unknown>(null);
+  useEffect(() => {
+    if (state.liked === likedSaved.current) return;
+    const first = likedSaved.current === null;
+    likedSaved.current = state.liked;
+    if (first) return; // nothing has been changed yet — the store is already right
+    const t = window.setTimeout(() => saveLikes(state.liked), 250);
+    return () => window.clearTimeout(t);
+  }, [state.liked]);
 
   const [library, setLibrary] = useState<{ available: boolean; permission: LibraryPermission; scanning: boolean }>(() => ({
     available: hasDeviceLibrary(),
