@@ -39,13 +39,18 @@ export function parseLikes(raw: unknown): Likes {
   return out;
 }
 
-/** The blob to store: only the ids that are actually liked. */
-export function serializeLikes(likes: Likes): string {
+/** Only the ids that are actually liked — an un-like is the absence of an entry. */
+export function likedEntries(likes: Likes): Likes {
   const out: Likes = {};
   for (const [id, liked] of Object.entries(likes)) {
     if (id && liked === true) out[id] = true;
   }
-  return JSON.stringify(out);
+  return out;
+}
+
+/** The blob to store. */
+export function serializeLikes(likes: Likes): string {
+  return JSON.stringify(likedEntries(likes));
 }
 
 /** Load the listener's likes, or an empty set when there is nothing stored. */

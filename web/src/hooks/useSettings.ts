@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { firstRun, persistSoon } from '../utils/persist';
 
 /** Everything the settings sheet can switch on or off. */
 export interface Settings {
@@ -47,18 +48,13 @@ function load(): Settings {
 export function useSettings() {
   const [settings, setSettings] = useState<Settings>(load);
 
-  // Debounced: dragging the glass or corner slider fired this on every step, so
-  // a single drag wrote to storage dozens of times. One write, a moment later,
-  // is the same thing.
+  // Debounced, and silent on the first run: the value this hook starts with is
+  // the value it just read, so writing it back stored what was already there and
+  // cost a disk write on every launch.
+  const stored = useRef(false);
   useEffect(() => {
-    const t = window.setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-      } catch {
-        // Private mode or a full quota — the app still works, it just forgets.
-      }
-    }, 250);
-    return () => window.clearTimeout(t);
+    if (firstRun(stored)) return undefined;
+    return persistSoon(STORAGE_KEY, settings);
   }, [settings]);
 
   const toggle = useCallback((key: keyof Settings) => {
