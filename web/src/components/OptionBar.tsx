@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { PaletteIcon, SettingsIcon, ExpandIcon } from './Icons';
 
 interface Props {
@@ -14,7 +15,7 @@ interface Props {
  * lift on the capsule rather than on each button. That is fewer surfaces to draw
  * than three separate glass pills, so it is lighter as well as tidier.
  */
-export function OptionBar({ onStyle, onSettings, onFullscreen }: Props) {
+export const OptionBar = memo(function OptionBar({ onStyle, onSettings, onFullscreen }: Props) {
   return (
     <div className="optionbar" role="toolbar" aria-label="Options">
       <button type="button" className="optionbar__item" aria-label="Style" title="Style" onClick={onStyle}>
@@ -28,4 +29,4 @@ export function OptionBar({ onStyle, onSettings, onFullscreen }: Props) {
       </button>
     </div>
   );
-}
+});

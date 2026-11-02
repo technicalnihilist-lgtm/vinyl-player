@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { MusicNoteIcon, HeartIcon } from './Icons';
 import { ACCENTS } from '../hooks/useStyle';
 
@@ -23,7 +24,7 @@ const BAR_ACCENTS = ACCENTS.slice(0, 4);
  * the colour the app leans on, one tap away, sitting in the glass bar rather
  * than buried in a settings sheet.
  */
-export function TabBar({ tab, onChange, accent, onAccent }: Props) {
+export const TabBar = memo(function TabBar({ tab, onChange, accent, onAccent }: Props) {
   return (
     <nav className="tabbar" aria-label="Library">
       <span className={`tabbar__pill${tab === 'liked' ? ' is-right' : ''}`} aria-hidden="true" />
@@ -65,4 +66,4 @@ export function TabBar({ tab, onChange, accent, onAccent }: Props) {
       </div>
     </nav>
   );
-}
+});

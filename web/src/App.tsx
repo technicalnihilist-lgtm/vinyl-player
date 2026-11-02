@@ -47,6 +47,24 @@ export default function App() {
   const openImporter = useCallback(() => fileRef.current?.click(), []);
   const openFolderImporter = useCallback(() => folderRef.current?.click(), []);
 
+  // Stable callbacks for the parts of the interface that never change while a
+  // song plays. The position lands in the player state several times a second,
+  // so the app re-renders just as often; every one of those re-renders used to
+  // rebuild the tab bar, the options bar and the whole settings sheet — a few
+  // hundred elements — because their handlers were fresh arrow functions each
+  // time. They are memoised components now, and these are what let them skip.
+  const openStyle = useCallback(() => {
+    setFocusStyle(true);
+    setSettingsOpen(true);
+  }, []);
+  const openSettings = useCallback(() => setSettingsOpen(true), []);
+  const closeSettings = useCallback(() => {
+    setSettingsOpen(false);
+    setFocusStyle(false);
+  }, []);
+  const pickAccent = useCallback((hex: string) => updateStyle('accent', hex), [updateStyle]);
+  const dismissSplash = useCallback(() => setShowSplash(false), []);
+
   const handleFiles = async (files: FileList | null, source: 'files' | 'folder' = 'files') => {
     if (!files || files.length === 0) return;
     const list = Array.from(files).slice(0, 500);
@@ -58,13 +76,13 @@ export default function App() {
     window.setTimeout(() => setNotice(null), 5000);
   };
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       void document.documentElement.requestFullscreen?.().catch(() => undefined);
     } else {
       void document.exitFullscreen?.().catch(() => undefined);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -162,7 +180,7 @@ export default function App() {
       className={`app${panelOpen ? '' : ' app--collapsed'}${state.isPlaying ? ' app--playing' : ''}${reducedMotion || !settings.glass ? ' app--calm' : ''}`}
       style={vars}
     >
-      {showSplash && <Splash onDone={() => setShowSplash(false)} />}
+      {showSplash && <Splash onDone={dismissSplash} />}
 
       <AmbientBackground />
 
@@ -186,11 +204,8 @@ export default function App() {
 
         {/* Every app-level option lives in this one bar, and nowhere else. */}
         <OptionBar
-          onStyle={() => {
-            setFocusStyle(true);
-            setSettingsOpen(true);
-          }}
-          onSettings={() => setSettingsOpen(true)}
+          onStyle={openStyle}
+          onSettings={openSettings}
           onFullscreen={toggleFullscreen}
         />
       </header>
@@ -302,7 +317,7 @@ export default function App() {
         tab={tab}
         onChange={setTab}
         accent={style.accent}
-        onAccent={(hex) => updateStyle('accent', hex)}
+        onAccent={pickAccent}
       />
 
       <SettingsSheet
@@ -313,10 +328,7 @@ export default function App() {
         style={style}
         onStyleChange={updateStyle}
         onStyleReset={resetStyle}
-        onClose={() => {
-          setSettingsOpen(false);
-          setFocusStyle(false);
-        }}
+        onClose={closeSettings}
       />
 
       <input

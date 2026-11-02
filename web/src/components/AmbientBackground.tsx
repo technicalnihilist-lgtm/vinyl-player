@@ -1,3 +1,5 @@
+import { memo } from 'react';
+
 /**
  * The drifting colour field the glass sits on.
  *
@@ -7,7 +9,7 @@
  * no `mix-blend-mode` and no blur filter on this container: both would force the
  * entire subtree to be re-composited every frame.
  */
-export function AmbientBackground() {
+export const AmbientBackground = memo(function AmbientBackground() {
   return (
     <div className="ambient" aria-hidden="true">
       <span className="ambient__blob ambient__blob--1" />
@@ -15,4 +17,4 @@ export function AmbientBackground() {
       <span className="ambient__blob ambient__blob--3" />
     </div>
   );
-}
+});
