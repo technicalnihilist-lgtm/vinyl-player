@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent, KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { clampTime, formatTime, progressPercent } from '../utils/format';
+import { seekTarget } from '../utils/timeline';
 
 interface Props {
   current: number;
@@ -24,8 +25,7 @@ export function Timeline({ current, duration, onSeek, onScrub }: Props) {
     const rail = railRef.current;
     if (!rail || duration <= 0) return 0;
     const rect = rail.getBoundingClientRect();
-    const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-    return clampTime(ratio * duration, duration);
+    return seekTarget(clientX, rect.left, rect.width, duration);
   };
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -48,6 +48,23 @@ export function Timeline({ current, duration, onSeek, onScrub }: Props) {
     e.currentTarget.releasePointerCapture?.(e.pointerId);
     // One published position for the whole drag, where the finger let go.
     onSeek(timeFromClientX(e.clientX));
+  };
+
+  /**
+   * The gesture was taken away, not finished — a system swipe, an incoming call,
+   * the notification shade coming down over the bar.
+   *
+   * A `pointercancel` carries no usable position (its `clientX` is 0), so
+   * treating it like a release seeked the track back to its very beginning: the
+   * song audibly restarted for a gesture the listener never completed. The drag's
+   * own last preview is where the finger actually was, so that is what is
+   * published.
+   */
+  const onPointerCancel = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!dragging) return;
+    setDragging(false);
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
+    onSeek(clampTime(preview, duration));
   };
 
   const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -94,7 +111,7 @@ export function Timeline({ current, duration, onSeek, onScrub }: Props) {
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        onPointerCancel={onPointerCancel}
         onKeyDown={onKeyDown}
       >
         <div className="timeline__track" />
