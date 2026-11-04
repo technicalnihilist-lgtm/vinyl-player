@@ -15,9 +15,19 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO="$(cd "$ROOT/.." && pwd)"
 SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
-VERSION_CODE="${VERSION_CODE:-102}"
-VERSION_NAME="${VERSION_NAME:-102.0}"
+
+# Same source of truth as build.sh — see version.sh.
+PKG_CODE=""
+PKG_NAME=""
+# shellcheck source=version.sh
+if . "$ROOT/version.sh" 2>/dev/null && PKG_VER="$(vinyl_version "$REPO")"; then
+  PKG_CODE="${PKG_VER% *}"
+  PKG_NAME="${PKG_VER#* }"
+fi
+VERSION_CODE="${VERSION_CODE:-${PKG_CODE:-102}}"
+VERSION_NAME="${VERSION_NAME:-${PKG_NAME:-102.0}}"
 BUNDLETOOL="${BUNDLETOOL:-}"
 
 if [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/java" ]; then PATH="$JAVA_HOME/bin:$PATH"; fi

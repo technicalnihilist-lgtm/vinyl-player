@@ -9,7 +9,7 @@
 #   JAVA_HOME      a JDK 17            (falls back to `javac` on PATH)
 #   ANDROID_HOME   an Android SDK      (or ANDROID_SDK_ROOT)
 #   WEB_DIST       the built web app   (defaults to ../web/dist)
-#   VERSION_CODE / VERSION_NAME        (default 102 / 102.0)
+#   VERSION_CODE / VERSION_NAME        (default: read from package.json)
 #
 #   RELEASE_KEYSTORE                   path to your upload key (.jks/.keystore)
 #   RELEASE_STORE_PASSWORD             its store password
@@ -27,8 +27,19 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$ROOT/.." && pwd)"
 
 WEB_DIST="${WEB_DIST:-$REPO/web/dist}"
-VERSION_CODE="${VERSION_CODE:-102}"
-VERSION_NAME="${VERSION_NAME:-102.0}"
+
+# The version comes from package.json, so the manifest, the App Bundle and the
+# number the app shows in Settings can never disagree. An explicit VERSION_CODE
+# or VERSION_NAME still wins.
+PKG_CODE=""
+PKG_NAME=""
+# shellcheck source=version.sh
+if . "$ROOT/version.sh" 2>/dev/null && PKG_VER="$(vinyl_version "$REPO")"; then
+  PKG_CODE="${PKG_VER% *}"
+  PKG_NAME="${PKG_VER#* }"
+fi
+VERSION_CODE="${VERSION_CODE:-${PKG_CODE:-102}}"
+VERSION_NAME="${VERSION_NAME:-${PKG_NAME:-102.0}}"
 
 SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
 
