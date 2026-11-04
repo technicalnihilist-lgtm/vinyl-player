@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { Track } from '../types';
 
 interface Props {
@@ -18,10 +18,12 @@ export function Artwork({ track, className = '' }: Props) {
   // Now a CSS gradient rather than an image URL — see utils/artwork.ts.
   const fallback = track.fallbackArt ?? track.artwork;
   const remote = track.artwork && track.artwork !== fallback ? track.artwork : null;
-  const [failed, setFailed] = useState(false);
-
-  // Reset the failure state when the track changes.
-  useEffect(() => setFailed(false), [track.id]);
+  // Which cover failed, rather than a bare boolean: a boolean has to be cleared
+  // when the track changes, and clearing it in an effect meant every cover in the
+  // list rendered once, then rendered again a moment later to re-show an image
+  // that had never failed. Naming the track makes the reset part of the answer.
+  const [failedId, setFailedId] = useState<string | null>(null);
+  const failed = failedId === track.id;
 
   return (
     <span className={`artwork ${className}`.trim()} style={{ backgroundImage: fallback, backgroundColor: '#0d0a1c' }} aria-hidden="true">
@@ -33,7 +35,7 @@ export function Artwork({ track, className = '' }: Props) {
           draggable={false}
           loading="lazy"
           decoding="async"
-          onError={() => setFailed(true)}
+          onError={() => setFailedId(track.id)}
         />
       )}
     </span>
