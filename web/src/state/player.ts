@@ -19,7 +19,11 @@ export interface PlayerState {
   repeat: RepeatMode;
   error: string | null;
   liked: Record<string, boolean>;
-  /** Playback order (indices into `tracks`). Equals the natural order unless shuffle is on. */
+  /**
+   * Playback order (indices into `tracks`), and only meaningful when shuffle is on.
+   * With shuffle off the order *is* the library order, index for index, so this is
+   * left empty rather than filled with an array that says exactly that.
+   */
   order: number[];
   /** Bumped whenever playback must restart from 0 on the *same* index (repeat-one). */
   nonce: number;
@@ -157,7 +161,9 @@ export function initState(tracks: Track[]): PlayerState {
     repeat: 'off',
     error: null,
     liked: {},
-    order: range(tracks.length),
+    // Nothing to build: with shuffle off the play order is the index itself. See
+    // the note on `order` above.
+    order: [],
     nonce: 0,
   };
 }
@@ -177,7 +183,7 @@ export function playerReducer(state: PlayerState, action: Action): PlayerState {
       const tracks = [...state.tracks, ...incoming];
       const order = state.shuffle
         ? [...state.order, ...shuffled(incoming.length).map((i) => i + start)]
-        : range(tracks.length);
+        : state.order;
       const first = state.tracks.length === 0;
       return {
         ...state,
@@ -211,7 +217,7 @@ export function playerReducer(state: PlayerState, action: Action): PlayerState {
       const tracks = [...state.tracks, ...action.tracks];
       const order = state.shuffle
         ? [...state.order, ...shuffled(action.tracks.length).map((i) => i + start)]
-        : range(tracks.length);
+        : state.order;
       return {
         ...state,
         tracks,
@@ -252,7 +258,7 @@ export function playerReducer(state: PlayerState, action: Action): PlayerState {
       return {
         ...state,
         tracks,
-        order: state.shuffle ? shuffled(tracks.length, Math.random, index) : range(tracks.length),
+        order: state.shuffle ? shuffled(tracks.length, Math.random, index) : state.order,
         currentIndex: index,
         currentTime: sameTrack ? state.currentTime : 0,
         duration: trackDuration(tracks, index),

@@ -50,6 +50,43 @@ describe('step()', () => {
   });
 });
 
+describe('the play order is only built when it is used', () => {
+  // With shuffle off the order is the library order, index for index, so an array
+  // of it is an array of the numbers 0..n-1 — five thousand entries on a full
+  // phone, allocated on every rescan and every import to say nothing.
+  it('starts empty, because the order is the index', () => {
+    expect(initState(mk(500)).order).toEqual([]);
+  });
+
+  it('is built the moment shuffle is turned on', () => {
+    const s = playerReducer(base(5), { type: 'TOGGLE_SHUFFLE' });
+    expect([...s.order].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it('stays empty when tracks are added with shuffle off', () => {
+    const s = playerReducer(base(3), { type: 'ADD_TRACKS', tracks: mk(5).slice(3) });
+    expect(s.tracks).toHaveLength(5);
+    expect(s.order).toEqual([]);
+  });
+
+  it('grows by exactly the new tracks when shuffle is on', () => {
+    const shuffledState = playerReducer(base(3), { type: 'TOGGLE_SHUFFLE' });
+    const s = playerReducer(shuffledState, { type: 'ADD_TRACKS', tracks: mk(5).slice(3) });
+    expect(s.tracks).toHaveLength(5);
+    expect([...s.order].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it('is left alone by a rescan with shuffle off, and rebuilt with shuffle on', () => {
+    const off = playerReducer(base(3), { type: 'SET_LIBRARY', tracks: mk(4) });
+    expect(off.order).toEqual([]);
+    const on = playerReducer(playerReducer(base(3), { type: 'TOGGLE_SHUFFLE' }), {
+      type: 'SET_LIBRARY',
+      tracks: mk(4),
+    });
+    expect([...on.order].sort((a, b) => a - b)).toEqual([0, 1, 2, 3]);
+  });
+});
+
 describe('playerReducer track transitions', () => {
   it('resets time and duration when the index changes', () => {
     let s = base(3, { currentTime: 55 });
