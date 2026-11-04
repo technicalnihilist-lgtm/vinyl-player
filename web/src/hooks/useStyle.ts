@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { firstRun, persistSoon } from '../utils/persist';
 
 /**
  * Everything the player's look is built from, so it can be changed without
@@ -135,18 +136,18 @@ function load(): Style {
 export function useStyle() {
   const [style, setStyle] = useState<Style>(load);
 
-  // Debounced: dragging the glass or corner slider fired this on every step, so
-  // a single drag wrote to storage dozens of times. One write, a moment later,
-  // is the same thing.
+  // Debounced, and silent on the first run: the value this hook starts with is
+  // the value it just read, so writing it straight back stored what was already
+  // on disk — a storage write on every single launch, for nothing.
+  //
+  // This was the last store still carrying its own copy of the timer. It goes
+  // through the shared helper now, like the settings and the hearts, so there is
+  // one place that decides when a write happens and one place that decides to
+  // skip the first one.
+  const stored = useRef(false);
   useEffect(() => {
-    const t = window.setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(style));
-      } catch {
-        // Private mode or a full quota — the app still works, it just forgets.
-      }
-    }, 250);
-    return () => window.clearTimeout(t);
+    if (firstRun(stored)) return undefined;
+    return persistSoon(STORAGE_KEY, style);
   }, [style]);
 
   const update = useCallback(<K extends keyof Style>(key: K, value: Style[K]) => {
