@@ -65,6 +65,29 @@ export function shuffled(n: number, rand: () => number = Math.random, first?: nu
 export const activeOrder = (state: PlayerState): number[] =>
   state.shuffle ? state.order : range(state.tracks.length);
 
+/**
+ * Where each index sits in a play order.
+ *
+ * `step()` needs the position of the playing track inside the shuffled order, and
+ * asked for it with `order.indexOf()` — a scan of the whole order on every next,
+ * previous and end-of-track. With shuffle on and a full phone that is a few
+ * thousand comparisons per press, on the path a track change takes.
+ *
+ * An order is replaced wholesale whenever it changes (shuffle toggled, the library
+ * rescanned, tracks added), never edited in place, so the map is cached against
+ * the array itself and goes away with it.
+ */
+const orderPositions = new WeakMap<number[], Map<number, number>>();
+
+function positionsOf(order: number[]): Map<number, number> {
+  const cached = orderPositions.get(order);
+  if (cached) return cached;
+  const positions = new Map<number, number>();
+  for (let i = 0; i < order.length; i++) positions.set(order[i], i);
+  orderPositions.set(order, positions);
+  return positions;
+}
+
 export interface StepResult {
   index: number;
   /** True when playback should stop (end of list, repeat off). */
@@ -100,7 +123,10 @@ export function step(state: PlayerState, dir: 1 | -1, atEnd: boolean): StepResul
   // handed it to the collector.
   const order = state.shuffle ? state.order : null;
   const length = order ? order.length : total;
-  const pos = order ? order.indexOf(state.currentIndex) : state.currentIndex;
+  // `?? -1` is what `indexOf` answered for an index that is not in the order at
+  // all — a stale order, or a library that changed underneath it — so the walk
+  // below behaves exactly as it did.
+  const pos = order ? (positionsOf(order).get(state.currentIndex) ?? -1) : state.currentIndex;
   let nextPos = pos + dir;
 
   if (nextPos >= length) {

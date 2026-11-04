@@ -103,6 +103,65 @@ describe('playerReducer track transitions', () => {
   });
 });
 
+describe('step() with shuffle', () => {
+  // The position is read from a cached map instead of scanning the order. This
+  // checks it against the scan over orders of every size, from every position, in
+  // both directions — including an index that is not in the order at all.
+  const scanStep = (state: PlayerState, dir: 1 | -1, atEnd: boolean) => {
+    // The two early answers step() gives before it walks the order at all.
+    if (state.tracks.length === 1) {
+      if (dir === 1 && atEnd) {
+        return state.repeat === 'one' || state.repeat === 'all'
+          ? { index: 0, stop: false, replay: true }
+          : { index: 0, stop: true, replay: false };
+      }
+      return { index: 0, stop: false, replay: false };
+    }
+    if (dir === 1 && atEnd && state.repeat === 'one') {
+      return { index: state.currentIndex, stop: false, replay: true };
+    }
+    const order = state.order;
+    const pos = order.indexOf(state.currentIndex);
+    let nextPos = pos + dir;
+    if (nextPos >= order.length) {
+      if (state.repeat === 'all') nextPos = 0;
+      else if (atEnd) return { index: state.currentIndex, stop: true, replay: false };
+      else nextPos = order.length - 1;
+    }
+    if (nextPos < 0) nextPos = state.repeat === 'all' ? order.length - 1 : 0;
+    return { index: order[nextPos], stop: false, replay: false };
+  };
+
+  it('agrees with scanning the order, for every case', () => {
+    let seed = 7;
+    const rand = () => {
+      seed = (seed * 1103515245 + 12345) % 2147483648;
+      return seed / 2147483648;
+    };
+    for (const n of [2, 3, 4, 7]) {
+      const order = shuffled(n, rand);
+      for (const currentIndex of [...order, 99]) {
+        for (const repeat of ['off', 'all', 'one'] as const) {
+          for (const dir of [1, -1] as const) {
+            for (const atEnd of [false, true]) {
+              const state = base(n, { shuffle: true, order, currentIndex, repeat });
+              expect(step(state, dir, atEnd)).toEqual(scanStep(state, dir, atEnd));
+            }
+          }
+        }
+      }
+    }
+  });
+
+  it('finds the same position after the order has been used once already', () => {
+    const order = [4, 0, 3, 1, 2];
+    const state = base(5, { shuffle: true, order, currentIndex: 3, repeat: 'all' });
+    expect(step(state, 1, false).index).toBe(1);
+    expect(step(state, 1, false).index).toBe(1);
+    expect(step(state, -1, false).index).toBe(0);
+  });
+});
+
 describe('step() without shuffle', () => {
   // The play order is the library order, so the neighbour must be readable
   // straight off the index. This checks the shortcut against the long way —
