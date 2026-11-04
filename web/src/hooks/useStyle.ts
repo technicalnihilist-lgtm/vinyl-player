@@ -203,6 +203,20 @@ export function styleVars(style: Style, accentFromTrack?: string): CSSProperties
   } as CSSProperties;
 }
 
+/**
+ * Whether this is still the default look, key for key.
+ *
+ * The Style panel used to spell the comparison out by hand, one field at a time,
+ * and Depth was missing from the list — so dragging Depth alone left the panel's
+ * Reset button disabled, with no way back to the default but dragging it there by
+ * hand. Comparing every key means a new setting cannot be forgotten here.
+ */
+export function isDefaultStyle(style: Style): boolean {
+  return (Object.keys(DEFAULT_STYLE) as (keyof Style)[]).every(
+    (key) => style[key] === DEFAULT_STYLE[key],
+  );
+}
+
 /** A short, human summary of the current look — handy for tests and tooltips. */
 export function styleSummary(style: Style): string {
   return `${MOODS[style.mood]?.label ?? 'Liquid Glass'} · ${style.accent} · glass ${style.glass} · ${style.roundness}px · depth ${style.depth} · ${DISCS[style.disc]?.label}`;

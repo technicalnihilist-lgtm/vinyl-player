@@ -1,4 +1,4 @@
-import { ACCENTS, DISCS, MOODS, DEFAULT_STYLE } from '../hooks/useStyle';
+import { ACCENTS, DISCS, MOODS, isDefaultStyle } from '../hooks/useStyle';
 import type { DiscId, MoodId, Style } from '../hooks/useStyle';
 import { Switch } from './Switch';
 
@@ -13,13 +13,7 @@ const DISC_IDS = Object.keys(DISCS) as DiscId[];
 
 /** The style sheet: everything about the look, adjustable. */
 export function StylePanel({ style, onChange, onReset }: Props) {
-  const dirty =
-    style.accent !== DEFAULT_STYLE.accent ||
-    style.mood !== DEFAULT_STYLE.mood ||
-    style.glass !== DEFAULT_STYLE.glass ||
-    style.roundness !== DEFAULT_STYLE.roundness ||
-    style.disc !== DEFAULT_STYLE.disc ||
-    style.accentFromArt !== DEFAULT_STYLE.accentFromArt;
+  const dirty = !isDefaultStyle(style);
 
   return (
     <section className="style" aria-label="Style">
