@@ -284,8 +284,14 @@ export function playerReducer(state: PlayerState, action: Action): PlayerState {
       };
     }
 
-    case 'SET_STATUS':
-      return { ...state, status: action.status, error: action.error === undefined ? state.error : action.error };
+    case 'SET_STATUS': {
+      const error = action.error === undefined ? state.error : action.error;
+      // The same status and the same message is the same state. Returning the
+      // object we were handed lets React skip the re-render entirely, which is
+      // what makes a repeated event free.
+      if (action.status === state.status && error === state.error) return state;
+      return { ...state, status: action.status, error };
+    }
 
     case 'PLAY':
       return { ...state, isPlaying: true, status: state.status === 'error' ? 'loading' : 'playing', error: null };
@@ -342,14 +348,23 @@ export function playerReducer(state: PlayerState, action: Action): PlayerState {
       };
     }
 
+    // The media element reports the same position and the same duration more than
+    // once — a track change fires `durationchange` and `loadedmetadata` with one
+    // number, and a seek is followed by a `timeupdate` at the place it sought to.
+    // Each of those used to replace the state and re-render the whole app to show
+    // what was already on screen.
     case 'SET_TIME':
-      return { ...state, currentTime: action.time };
+      return action.time === state.currentTime ? state : { ...state, currentTime: action.time };
 
     case 'SET_DURATION':
-      return { ...state, duration: action.duration };
+      return action.duration === state.duration ? state : { ...state, duration: action.duration };
 
-    case 'SET_VOLUME':
-      return { ...state, volume: Math.min(1, Math.max(0, action.volume)), muted: false };
+    case 'SET_VOLUME': {
+      const volume = Math.min(1, Math.max(0, action.volume));
+      // Un-muting is a change even when the number is the same.
+      if (volume === state.volume && !state.muted) return state;
+      return { ...state, volume, muted: false };
+    }
 
     case 'TOGGLE_MUTE':
       return { ...state, muted: !state.muted };

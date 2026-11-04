@@ -50,6 +50,42 @@ describe('step()', () => {
   });
 });
 
+describe('an action that changes nothing keeps the same state', () => {
+  // The element repeats itself: a track change reports one duration twice, and a
+  // seek is followed by a timeupdate at the place it sought to. Returning the same
+  // object is what lets React skip the render.
+  it('SET_TIME at the position it already has', () => {
+    const s = base(3, { currentTime: 12.5 });
+    expect(playerReducer(s, { type: 'SET_TIME', time: 12.5 })).toBe(s);
+    expect(playerReducer(s, { type: 'SET_TIME', time: 12.6 }).currentTime).toBe(12.6);
+  });
+
+  it('SET_DURATION with the duration it already has', () => {
+    const s = base(3, { duration: 101 });
+    expect(playerReducer(s, { type: 'SET_DURATION', duration: 101 })).toBe(s);
+    expect(playerReducer(s, { type: 'SET_DURATION', duration: 240 }).duration).toBe(240);
+  });
+
+  it('SET_STATUS repeating itself', () => {
+    const s = base(3, { status: 'playing', error: null });
+    expect(playerReducer(s, { type: 'SET_STATUS', status: 'playing' })).toBe(s);
+    const failed = base(3, { status: 'error', error: 'Playback failed.' });
+    expect(playerReducer(failed, { type: 'SET_STATUS', status: 'error', error: 'Playback failed.' })).toBe(failed);
+    expect(playerReducer(failed, { type: 'SET_STATUS', status: 'error', error: 'Something else.' }).error).toBe(
+      'Something else.',
+    );
+  });
+
+  it('SET_VOLUME at the volume it already has — unless it was muted', () => {
+    const s = base(3, { volume: 0.5, muted: false });
+    expect(playerReducer(s, { type: 'SET_VOLUME', volume: 0.5 })).toBe(s);
+    const muted = base(3, { volume: 0.5, muted: true });
+    const unmuted = playerReducer(muted, { type: 'SET_VOLUME', volume: 0.5 });
+    expect(unmuted).not.toBe(muted);
+    expect(unmuted.muted).toBe(false);
+  });
+});
+
 describe('the play order is only built when it is used', () => {
   // With shuffle off the order is the library order, index for index, so an array
   // of it is an array of the numbers 0..n-1 — five thousand entries on a full

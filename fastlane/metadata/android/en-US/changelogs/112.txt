@@ -1,0 +1,4 @@
+Fewer re-renders while a song plays, and a search that no longer lowercases the whole library on every keystroke.
+The APK now carries the real version number instead of always saying 102.
+Adding songs no longer scrolls the list back to the playing track.
+Fixed: Reset in the Style panel now lights up when only Depth has changed.

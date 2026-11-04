@@ -7,6 +7,166 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 112 — 4 November 2026
+
+**The element's repeated events re-rendered the app to show what was already there.**
+
+A track change fires `durationchange` and then `loadedmetadata`, both carrying the
+same duration, and each one replaced the state — two full re-renders of the app to
+draw the same number twice. A seek is followed by a `timeupdate` at the place it
+sought to, and `playing` fires again after every buffer recovery, each reporting the
+status the player already had. The volume slider sends its last value again when a
+drag runs past the end.
+
+The reducer answers all four of those with the state it was given when nothing
+actually changed, which is what lets React skip the render. A changed value still
+goes through exactly as before, un-muting still clears the mute even when the number
+is the same, and there are tests for each case.
+
+## 111 — 4 November 2026
+
+**The play order was built even when shuffle was off.**
+
+With shuffle off the play order is the library order, index for index — the array
+says nothing the index does not. It was built anyway, on the first render, on every
+import, and on every library rescan: `range(n)` makes an array of n numbers, so a
+5,000-song library allocated a 5,000-entry array (37 KB, measured) to hold the
+numbers 0 to 4,999, and handed the previous one to the collector. The shell rescans each
+time the app comes back to the foreground, so that was a rescan-sized allocation
+every time the phone was unlocked.
+
+The order is empty until shuffle is turned on, which is the only time it is read.
+Turning shuffle on builds it exactly as before, and with shuffle on an import still
+appends to it. Tests cover all four transitions: on, off, and adding tracks either
+way.
+
+## 110 — 4 November 2026
+
+**Adding songs threw the list back to whatever was playing.**
+
+Keeping the playing row in view was an effect that depended on `tracks` — and
+`tracks` is a new array every time the library changes: an import, a folder added,
+or the rescan the Android shell runs each time the app comes back to the foreground.
+So the list scrolled itself back to the playing song whenever the library changed,
+even though the playing song had not moved, yanking the list away from wherever the
+listener was reading. On a rescan that happens on every return to the app.
+
+It watches the active track's id now, which is what it actually cares about. The
+scroll happens when the song changes, and a library update leaves the list where it
+is. It also means the smooth scroll is no longer fired on every rescan.
+
+## 109 — 4 November 2026
+
+**Dragging Depth alone left the Style panel's Reset button dead.**
+
+The panel decides whether to offer a Reset by comparing the current Style with the
+defaults, field by field — and Depth was not in the list. Move the Depth slider, and
+Reset stayed disabled: the only way back to the default look was to drag the slider
+back to exactly 60 by hand, guessing at the number.
+
+The comparison is one exported function now, checking every key of the default
+Style, so a setting added later cannot be left out of it. Its own test walks each
+field in turn — Depth included, at both ends of its range — and asserts the panel
+sees it as a change.
+
+## 108 — 4 November 2026
+
+**Searching lowercased the whole library on every keystroke.**
+
+The filter compares the query against each song's title and artist, case-insensitively,
+so it called `toLowerCase()` twice per track — two fresh strings per song, on every
+character typed. A few thousand songs is a few thousand short-lived strings per
+keystroke, none of which had changed since the last one.
+
+The lowercased text is built once per library and cached against the library array,
+which is replaced whenever the tracks change and so cannot go stale. Nothing is
+built until there is a query. Measured on a 5,000-track library: 0.99 ms per search
+becomes 0.51 ms (1.9×), and the 10,000 strings allocated per search become none —
+the first search pays 3.7 ms to build the index and every search after it reuses it.
+
+The existing test that checks the filter against the map-then-filter version it
+replaced still passes, and a new one checks that a second search of the same library
+answers identically.
+
+## 107 — 4 November 2026
+
+**With shuffle on, every track change scanned the whole play order.**
+
+97 took the library-sized array out of the unshuffled path. The shuffled one still
+asked `order.indexOf(currentIndex)` for the playing track's position — a linear
+scan of the play order on every next, previous and end-of-track. Shuffle on with a
+few thousand songs is a few thousand comparisons per press, right on the path a
+track change takes.
+
+The positions are read from a map built once per order and cached against the array
+itself, which is replaced wholesale whenever the order changes and so cannot go
+stale. Measured with shuffle on, stepping from the last position in the order —
+the worst case for a scan: 7,570 ns becomes 245 ns on a 5,000-track order (31×),
+and 1,833 ns becomes 149 ns on a 1,000-track one (12×).
+
+A test walks orders of every size, from every position, in both directions, through
+every repeat mode, and includes an index that is not in the order at all, so the map
+is proven to answer exactly what the scan answered.
+
+## 106 — 4 November 2026
+
+**The transport row and the volume slider were rebuilt four times a second.**
+
+The settings sheet, the tab bar, the options bar and the ambient background were
+memoised in 100, which left the controls under the progress bar out. They are
+memoised now — but the transport row was being handed the whole player state, and
+that object is replaced on every playback tick because the position lives in it, so
+a memo alone would have changed nothing. It is given the six values it actually
+draws instead, all of them stable while a song plays, and `actions` was already one
+stable object.
+
+A tick now rebuilds neither the transport row (27 elements, five of them buttons)
+nor the volume control (7) — 34 elements that were rebuilt four or five times a
+second to draw exactly the same picture. Counted, not estimated: both components
+rendered to markup and their elements counted.
+
+## 105 — 4 November 2026
+
+**Every cover in the list drew itself twice on the way in.**
+
+`Artwork` kept a plain `failed` flag and cleared it in an effect keyed on the track
+id. An effect runs after the paint, so each cover mounted, painted, then re-rendered
+itself once to say "not failed" — which it already was. On a library of a few
+hundred songs that is a few hundred extra renders, and as many extra reconciliations
+of the `<img>` inside them, before the list has settled.
+
+The flag names the track that failed instead, so the reset is part of the answer and
+there is no effect at all. Every cover renders once on mount, and a cover that fails
+still falls back to its gradient exactly as before.
+
+## 104 — 4 November 2026
+
+**Opening the app still wrote the style it had just read.**
+
+The settings and the hearts stopped writing their freshly loaded value back on the
+first run in 96, through the shared helper in `utils/persist.ts`. The style was
+left behind: it kept its own copy of the timer, and its effect fired on mount with
+the value it had read a millisecond earlier. So every launch still cost a write to
+the local store to save exactly what was already there.
+
+It uses the shared helper now — one fewer disk write per launch, and the last of
+the three stores to be brought in line.
+
+## 103 — 4 November 2026
+
+**The APK was permanently version 102, whatever the app said.**
+
+Both Android build scripts carried the version as a default in the script itself —
+`VERSION_CODE=102`, `VERSION_NAME=102.0` — and nothing ever passed anything else.
+package.json moved on with every release, the app's Settings screen showed the new
+number, and the manifest kept claiming 102. Android treats two builds with the same
+versionCode as the same version, and Play refuses an App Bundle whose versionCode
+has not gone up, so this would have blocked the next upload outright.
+
+The number now comes from package.json — the same file the web build stamps into
+the app — through one small `android/version.sh` both scripts share. An explicit
+`VERSION_CODE` / `VERSION_NAME` in the environment still wins, for a one-off build.
+
 ## 102 — 2 November 2026
 
 **Songs you added by hand no longer vanish when the app rescans the library.**
