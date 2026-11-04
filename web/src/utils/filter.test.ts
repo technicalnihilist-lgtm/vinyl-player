@@ -49,6 +49,18 @@ describe('filterTracks()', () => {
     expect(ids(filterTracks(LIB, 'shape', 'liked', { a: true }))).toEqual([]);
   });
 
+  it('reuses the lowercased text of a library it has already searched', () => {
+    // Same array, two searches: the second must answer the same thing, and the
+    // index must be built against the array rather than against a track.
+    const first = filterTracks(LIB, 'kesar', 'all', {});
+    const second = filterTracks(LIB, 'kesar', 'all', {});
+    expect(second).toEqual(first);
+    // A different array with different titles is a different index.
+    const other = [mk('z', 'Kesariya (Reprise)', 'Someone')];
+    expect(ids(filterTracks(other, 'kesar', 'all', {}))).toEqual(['z']);
+    expect(ids(filterTracks(LIB, 'kesar', 'all', {}))).toEqual(['a']);
+  });
+
   it('agrees with the map-then-filter version it replaced', () => {
     const old = (tracks: Track[], query: string, filter: 'all' | 'liked', likes: Record<string, boolean>) => {
       const q = query.trim().toLowerCase();
