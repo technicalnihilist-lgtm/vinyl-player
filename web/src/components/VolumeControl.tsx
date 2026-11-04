@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { MuteIcon, VolumeIcon } from './Icons';
 
 interface Props {
@@ -7,7 +8,12 @@ interface Props {
   onToggleMute: () => void;
 }
 
-export function VolumeControl({ volume, muted, onVolume, onToggleMute }: Props) {
+/**
+ * Memoised for the same reason as the transport row: none of these four values
+ * changes when the song's position does, so a playback tick has no business
+ * rebuilding the slider.
+ */
+export const VolumeControl = memo(function VolumeControl({ volume, muted, onVolume, onToggleMute }: Props) {
   const value = muted ? 0 : volume;
   return (
     <div className="volume">
@@ -33,4 +39,4 @@ export function VolumeControl({ volume, muted, onVolume, onToggleMute }: Props) 
       />
     </div>
   );
-}
+});

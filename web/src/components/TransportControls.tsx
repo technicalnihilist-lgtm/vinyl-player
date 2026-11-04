@@ -1,16 +1,37 @@
-import type { PlayerState } from '../state/player';
+import { memo } from 'react';
+import type { PlaybackStatus, RepeatMode } from '../types';
 import type { usePlayer } from '../hooks/usePlayer';
 import { NextIcon, PauseIcon, PlayIcon, PrevIcon, RepeatIcon, RepeatOneIcon, ShuffleIcon } from './Icons';
 
 type Actions = ReturnType<typeof usePlayer>['actions'];
 
 interface Props {
-  state: PlayerState;
+  isPlaying: boolean;
+  shuffle: boolean;
+  repeat: RepeatMode;
+  status: PlaybackStatus;
+  error: string | null;
   actions: Actions;
 }
 
-export function TransportControls({ state, actions }: Props) {
-  const { isPlaying, shuffle, repeat, status, error } = state;
+/**
+ * The transport row.
+ *
+ * Memoised, and given the six values it actually draws rather than the whole
+ * player state: the position lands in that state several times a second, so the
+ * app re-renders just as often, and a `state` object that changes with it would
+ * have defeated the memo entirely. The values here only change when something the
+ * row shows changes, and `actions` is a stable object, so a playback tick now
+ * rebuilds nothing at all.
+ */
+export const TransportControls = memo(function TransportControls({
+  isPlaying,
+  shuffle,
+  repeat,
+  status,
+  error,
+  actions,
+}: Props) {
   const loading = status === 'loading';
 
   return (
@@ -69,4 +90,4 @@ export function TransportControls({ state, actions }: Props) {
       )}
     </div>
   );
-}
+});

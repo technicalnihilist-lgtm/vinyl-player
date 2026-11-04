@@ -289,7 +289,14 @@ export default function App() {
                 <HeartIcon size={18} filled={liked} />
               </button>
 
-              <TransportControls state={state} actions={actions} />
+              <TransportControls
+                isPlaying={state.isPlaying}
+                shuffle={state.shuffle}
+                repeat={state.repeat}
+                status={state.status}
+                error={state.error}
+                actions={actions}
+              />
 
               <VolumeControl
                 volume={state.volume}
