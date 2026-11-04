@@ -82,15 +82,18 @@ export const Playlist = memo(function Playlist({
     return list.querySelector<HTMLLIElement>(`[data-track-id="${id}"]`);
   }, []);
 
-  // Keep the active row visible.
+  // Keep the active row visible — when the *active row* changes, not when the
+  // library does. `tracks` is a new array after every rescan and every import, and
+  // depending on it scrolled the list back to the playing song while the listener
+  // was reading somewhere else in it: pick a folder of files, and the list jumped.
+  const activeId = tracks[currentIndex]?.id ?? null;
   useEffect(() => {
-    const active = tracks[currentIndex];
-    if (!active) return;
-    rowFor(active.id)?.scrollIntoView({
+    if (!activeId) return;
+    rowFor(activeId)?.scrollIntoView({
       block: 'nearest',
       behavior: reducedMotion ? 'auto' : 'smooth',
     });
-  }, [currentIndex, tracks, reducedMotion, rowFor]);
+  }, [activeId, reducedMotion, rowFor]);
 
   // Slide the highlight to whichever row is playing.
   useLayoutEffect(() => {
