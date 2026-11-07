@@ -35,6 +35,8 @@ export default function App() {
   const [panelOpen, setPanelOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  /** The timer that clears the notice, so a new notice can take it over. */
+  const noticeTimer = useRef(0);
   const [showSplash, setShowSplash] = useState(true);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const folderRef = useRef<HTMLInputElement | null>(null);
@@ -65,15 +67,27 @@ export default function App() {
   const pickAccent = useCallback((hex: string) => updateStyle('accent', hex), [updateStyle]);
   const dismissSplash = useCallback(() => setShowSplash(false), []);
 
+  // One timer for the message, held rather than fired and forgotten. It used to be
+  // `window.setTimeout(() => setNotice(null), 5000)` with nothing keeping hold of
+  // it, so importing twice inside five seconds meant the *first* import's timer
+  // wiped the second message a second after it appeared — and the timer outlived
+  // the app itself, setting state on a component that was no longer there.
+  const showNotice = useCallback((text: string) => {
+    setNotice(text);
+    window.clearTimeout(noticeTimer.current);
+    noticeTimer.current = window.setTimeout(() => setNotice(null), 5000);
+  }, []);
+
+  useEffect(() => () => window.clearTimeout(noticeTimer.current), []);
+
   const handleFiles = async (files: FileList | null, source: 'files' | 'folder' = 'files') => {
     if (!files || files.length === 0) return;
     const list = Array.from(files).slice(0, 500);
     const added = await actions.importFiles(list);
     const where = source === 'folder' ? ' from that folder' : '';
-    setNotice(
+    showNotice(
       added ? `Added ${added} track${added > 1 ? 's' : ''}${where}.` : 'No supported audio files were found.',
     );
-    window.setTimeout(() => setNotice(null), 5000);
   };
 
   const toggleFullscreen = useCallback(() => {

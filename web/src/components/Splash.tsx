@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { APP_VERSION } from '../version';
 
 const REPO = 'https://github.com/technicalnihilist-lgtm/vinyl-player';
@@ -10,6 +10,10 @@ const REPO_LABEL = 'github.com/technicalnihilist-lgtm/vinyl-player';
  */
 export function Splash({ onDone }: { onDone: () => void }) {
   const [leaving, setLeaving] = useState(false);
+  /** The tap-to-leave timer, so it cannot fire after the screen has gone. */
+  const tapTimer = useRef(0);
+
+  useEffect(() => () => window.clearTimeout(tapTimer.current), []);
 
   useEffect(() => {
     const out = window.setTimeout(() => setLeaving(true), 1900);
@@ -23,7 +27,7 @@ export function Splash({ onDone }: { onDone: () => void }) {
   const leave = () => {
     if (leaving) return;
     setLeaving(true);
-    window.setTimeout(onDone, 420);
+    tapTimer.current = window.setTimeout(onDone, 420);
   };
 
   return (
