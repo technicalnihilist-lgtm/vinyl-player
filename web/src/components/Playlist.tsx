@@ -73,9 +73,6 @@ export const Playlist = memo(function Playlist({
     [tracks, query, filter, likesForFilter],
   );
 
-  /** The library indices of the rows on screen, in display order. */
-  const visibleIndices = useMemo(() => visible.map((row) => row.index), [visible]);
-
   const rowFor = useCallback((id: string) => {
     const list = listRef.current;
     if (!list) return null;
@@ -144,6 +141,12 @@ export const Playlist = memo(function Playlist({
     // Through the rows on screen, not through the library: with a tab or a
     // search filtering the list, stepping by one in the library moved the
     // selection to a song that was not showing.
+    //
+    // The indices are collected here rather than in a memo above, because the
+    // arrow keys are the only thing that reads them: built with the render, a
+    // library of five thousand songs allocated a five-thousand-entry array on
+    // every keystroke of a search, for a key that most searches never press.
+    const visibleIndices = visible.map((row) => row.index);
     const next = stepVisible(visibleIndices, currentIndex, e.key === 'ArrowDown' ? 1 : -1);
     if (next !== null) onSelect(next);
   };
