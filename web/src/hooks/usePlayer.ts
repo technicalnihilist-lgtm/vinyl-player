@@ -31,15 +31,51 @@ const IMPORT_PALETTES: [string, string, string][] = [
 /** How many files are probed at once when a batch is imported. */
 const IMPORT_CONCURRENCY = 6;
 
+/**
+ * The elements used to read durations, handed round instead of made per file.
+ *
+ * One `<audio>` was built for every file and dropped once it answered, so a
+ * folder of five hundred songs built and threw away five hundred media elements,
+ * each of which has to be created, wired to a decoder and torn down inside the
+ * WebView before the next one can start. Never more than IMPORT_CONCURRENCY are in
+ * use at a time — that is exactly how many probes run in parallel — so that many
+ * are kept and reused, and the import costs six elements however many files are in
+ * the folder.
+ */
+const idleProbes: HTMLAudioElement[] = [];
+
+function acquireProbe(): HTMLAudioElement {
+  const pooled = idleProbes.pop();
+  if (pooled) return pooled;
+  const probe = new Audio();
+  probe.preload = 'metadata';
+  return probe;
+}
+
+function releaseProbe(probe: HTMLAudioElement): void {
+  if (idleProbes.length < IMPORT_CONCURRENCY) idleProbes.push(probe);
+}
+
 /** Read a file's duration from its audio metadata (never guessed). */
 function readDuration(url: string): Promise<number> {
   return new Promise((resolve) => {
-    const probe = new Audio();
-    probe.preload = 'metadata';
+    const probe = acquireProbe();
     let settled = false;
+
+    const onLoaded = () => {
+      const d = probe.duration;
+      finish(Number.isFinite(d) && d > 0 ? d : 0);
+    };
+    const onError = () => finish(0);
+
     const finish = (d: number) => {
       if (settled) return;
       settled = true;
+      window.clearTimeout(timer);
+      // The element is reused, so it must not answer for the file it was given a
+      // moment ago: the listeners come off with it.
+      probe.removeEventListener('loadedmetadata', onLoaded);
+      probe.removeEventListener('error', onError);
       // Dropping the src is not enough on its own: the element keeps whatever it
       // was handed until it is told to let go, so every imported file left a
       // media resource behind for the life of the page. load() with no src
@@ -50,18 +86,13 @@ function readDuration(url: string): Promise<number> {
       } catch {
         /* ignore — the resource goes when the element does */
       }
+      releaseProbe(probe);
       resolve(d);
     };
+
     const timer = window.setTimeout(() => finish(0), 8000);
-    probe.addEventListener('loadedmetadata', () => {
-      window.clearTimeout(timer);
-      const d = probe.duration;
-      finish(Number.isFinite(d) && d > 0 ? d : 0);
-    });
-    probe.addEventListener('error', () => {
-      window.clearTimeout(timer);
-      finish(0);
-    });
+    probe.addEventListener('loadedmetadata', onLoaded);
+    probe.addEventListener('error', onError);
     probe.src = url;
   });
 }
@@ -348,7 +379,9 @@ export function usePlayer(initialTracks: Track[] = TRACKS) {
     // Reading durations one at a time meant a folder of a hundred songs was a
     // hundred metadata reads in single file, each waiting for the one before it.
     // Six at a time is parallel without opening a hundred decoders at once, and
-    // the rows still come out in the order the files were picked.
+    // the rows still come out in the order the files were picked. Six is also the
+    // size of the pool of probe elements those reads share, so the two numbers
+    // cannot drift apart.
     const urls = list.map((file) => URL.createObjectURL(file));
     const durations = new Array<number>(urls.length).fill(0);
     let next = 0;
