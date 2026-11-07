@@ -93,14 +93,27 @@ export const Playlist = memo(function Playlist({
   }, [activeId, reducedMotion, rowFor]);
 
   // Slide the highlight to whichever row is playing.
+  //
+  // It is re-measured whenever the rows can have moved — a track change, a tab, a
+  // search, a library update — and every measurement built a fresh `{ y, h }`,
+  // which is a new value to React even when the row had not shifted a pixel. So
+  // typing a search re-rendered the whole list section to draw the highlight
+  // where it already was: on a full phone, five thousand elements created and
+  // compared to paint the same rectangle. Returning the previous object when the
+  // numbers are the same is what lets React skip that render.
   useLayoutEffect(() => {
     const active = tracks[currentIndex];
     if (!active) {
-      setLens(null);
+      setLens((prev) => (prev === null ? prev : null));
       return;
     }
     const el = rowFor(active.id);
-    setLens(el ? { y: el.offsetTop, h: el.offsetHeight } : null);
+    setLens((prev) => {
+      if (!el) return prev === null ? prev : null;
+      const y = el.offsetTop;
+      const h = el.offsetHeight;
+      return prev && prev.y === y && prev.h === h ? prev : { y, h };
+    });
   }, [currentIndex, tracks, visible, filter, query, rowFor]);
 
   useEffect(() => {
