@@ -81,6 +81,26 @@ export const Visualizer = memo(function Visualizer({ engine, isPlaying, reducedM
       reflect.addColorStop(1, 'rgba(34,211,238,0)');
     };
 
+    // The bar geometry: the gap, the bar width, the baseline, the tallest bar and
+    // where each bar starts. All of it depends on the canvas size and nothing
+    // else, so it changes on a resize and at no other moment. It was worked out
+    // inside the paint instead, which meant every frame — thirty a second — paid
+    // for four measurements and seventy-two multiplications to arrive at the same
+    // numbers it had the frame before, twice over for the reflection.
+    let gap = 2;
+    let barW = 1;
+    let baseline = 1;
+    let maxH = 1;
+    const barX = new Float64Array(BARS);
+
+    const measureBars = () => {
+      gap = Math.max(2, (width / BARS) * 0.34);
+      barW = Math.max(1, (width - gap * (BARS - 1)) / BARS);
+      baseline = height * 0.7;
+      maxH = height * 0.62;
+      for (let i = 0; i < BARS; i++) barX[i] = i * (barW + gap);
+    };
+
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
       width = Math.max(1, rect.width);
@@ -88,6 +108,7 @@ export const Visualizer = memo(function Visualizer({ engine, isPlaying, reducedM
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      measureBars();
       buildGradients();
     };
     resize();
@@ -100,10 +121,6 @@ export const Visualizer = memo(function Visualizer({ engine, isPlaying, reducedM
 
     const render = () => {
       const levels = levelsRef.current;
-      const gap = Math.max(2, (width / BARS) * 0.34);
-      const barW = Math.max(1, (width - gap * (BARS - 1)) / BARS);
-      const baseline = height * 0.7;
-      const maxH = height * 0.62;
 
       ctx.clearRect(0, 0, width, height);
       if (!grad) buildGradients();
@@ -117,7 +134,7 @@ export const Visualizer = memo(function Visualizer({ engine, isPlaying, reducedM
         const level = Math.min(1, levels[i]);
         if (level < 0.012) continue;
         const h = Math.max(3, Math.pow(level, 0.82) * maxH);
-        barPath(ctx, i * (barW + gap), baseline - h, barW, h, barW / 2);
+        barPath(ctx, barX[i], baseline - h, barW, h, barW / 2);
       }
       ctx.fillStyle = grad as CanvasGradient;
       ctx.fill();
@@ -127,7 +144,7 @@ export const Visualizer = memo(function Visualizer({ engine, isPlaying, reducedM
         const level = Math.min(1, levels[i]);
         if (level < 0.03) continue;
         const h = Math.max(2, Math.pow(level, 0.82) * maxH) * 0.6;
-        barPath(ctx, i * (barW + gap), baseline + 6, barW, h, barW / 2);
+        barPath(ctx, barX[i], baseline + 6, barW, h, barW / 2);
       }
       ctx.fillStyle = reflect as CanvasGradient;
       ctx.fill();
