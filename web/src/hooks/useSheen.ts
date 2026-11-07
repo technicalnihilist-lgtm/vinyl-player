@@ -23,12 +23,29 @@ export function useSheen(ref: RefObject<HTMLElement | null>): void {
     let queued = false;
     let lastX = 0;
     let lastY = 0;
+
+    // The surface's box, kept between moves.
+    //
+    // Measuring it inside the per-frame update meant a `getBoundingClientRect` on
+    // every frame the pointer moved — and the frame before it had just written two
+    // custom properties, so that read was a forced style recalc and layout, up to
+    // sixty times a second, on two surfaces at once (the panel and the list). The
+    // box only changes when the layout does, so it is measured again when that
+    // happens and not otherwise.
+    let box: { left: number; top: number; width: number; height: number } | null = null;
+    const forgetBox = () => {
+      box = null;
+    };
+
     const apply = () => {
       queued = false;
-      const r = el.getBoundingClientRect();
-      if (!r.width || !r.height) return;
-      el.style.setProperty('--mx', `${((lastX - r.left) / r.width) * 100}%`);
-      el.style.setProperty('--my', `${((lastY - r.top) / r.height) * 100}%`);
+      if (!box) {
+        const r = el.getBoundingClientRect();
+        box = { left: r.left, top: r.top, width: r.width, height: r.height };
+      }
+      if (!box.width || !box.height) return;
+      el.style.setProperty('--mx', `${((lastX - box.left) / box.width) * 100}%`);
+      el.style.setProperty('--my', `${((lastY - box.top) / box.height) * 100}%`);
     };
     const onMove = (e: PointerEvent) => {
       lastX = e.clientX;
@@ -46,9 +63,18 @@ export function useSheen(ref: RefObject<HTMLElement | null>): void {
 
     el.addEventListener('pointermove', onMove);
     el.addEventListener('pointerleave', onLeave);
+    // Anything that can move the surface: the window resizing or scrolling, and
+    // the surface itself changing size (the panel's collapse, a row count change).
+    window.addEventListener('resize', forgetBox, { passive: true });
+    window.addEventListener('scroll', forgetBox, { passive: true, capture: true });
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(forgetBox) : null;
+    observer?.observe(el);
     return () => {
       el.removeEventListener('pointermove', onMove);
       el.removeEventListener('pointerleave', onLeave);
+      window.removeEventListener('resize', forgetBox);
+      window.removeEventListener('scroll', forgetBox, { capture: true } as EventListenerOptions);
+      observer?.disconnect();
     };
   }, [ref]);
 }
