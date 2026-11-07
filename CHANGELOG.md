@@ -7,6 +7,195 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 122 — 7 November 2026
+
+**Pressing play while it was playing re-rendered the app.**
+
+Three things ask the player to play or pause: the buttons on the system's media
+card, the shell echoing a hardware button back into the page, and the element's own
+events. Each of them reached the reducer and got a brand-new state object back, even
+when the player was already doing exactly what was asked — and a new state object is
+a re-render of the whole app, which on a tick's worth of interface is work nobody
+asked for.
+
+`PLAY` now answers with the state it was given when it is already playing with no
+error to clear, and `PAUSE` does the same when it is already paused. Everything
+that is a real change still goes through exactly as before: play starts a paused
+player, play after an error retries and clears the message, pause stops a playing
+one. There is a test for each of the five cases.
+
+## 121 — 7 November 2026
+
+**The song's title, artist and heart were rebuilt on every playback tick.**
+
+The position lives in the player state and lands there four or five times a
+second, so the app re-renders just as often. 100 and 106 took the settings sheet,
+the tab bar, the options bar, the ambient background, the transport row and the
+volume slider out of that re-render. Three things were left in it: the title and
+artist in the top bar, the title and artist under the record, and the heart beside
+the transport controls — seven elements, four or five times a second, to draw a
+song that had not changed and a heart that had not been pressed.
+
+They are memoised components now, in `components/NowPlaying.tsx`, given the track
+and the two things the heart draws rather than the whole state. A playback tick
+rebuilds none of them. The markup is unchanged element for element: the same two
+spans in the top bar, the same heading and line under the record, the same button
+with the same classes and the same handler.
+
+## 120 — 7 November 2026
+
+**Importing a folder built one audio element per file.**
+
+Adding a folder of songs reads each file's duration from its own metadata, six
+files at a time. Each read built its own `<audio>` element and dropped it once it
+answered, so a folder of five hundred songs built and threw away five hundred media
+elements — each one created, wired to a decoder and torn down inside the WebView
+before the next could start.
+
+The reads share six elements now. Six is not a guess: it is the number of probes
+that run in parallel, so it is also the most that can ever be in use at once, and
+the pool is the same constant. A probe hands its element back when it has answered,
+with its listeners taken off first so a reused element cannot answer for the file it
+was given a moment ago. The duration is still read from the file itself, the rows
+still come out in the order the files were picked, and the element still lets go of
+its media resource between files, as 90 fixed.
+
+## 119 — 7 November 2026
+
+**The glass highlight forced a layout on every pointer frame.**
+
+The specular highlight follows the pointer across a glass surface, and it is
+driven from a per-frame update — at most one write a frame, which is right. But
+each of those frames began by measuring the surface with
+`getBoundingClientRect`, right after the previous frame had written two custom
+properties to it: a forced style recalc and layout, up to sixty times a second,
+on two surfaces at once (the panel and the list inside it).
+
+The box is measured once and kept. It is forgotten when the layout can have
+changed — the window resizing, anything scrolling, or the surface itself changing
+size, which a ResizeObserver reports, so the panel's collapse and a change in row
+count are both covered — and measured again on the next move. A pointer crossing
+the glass now does no measuring at all; the highlight still follows it exactly as
+before, from the same rectangle.
+
+## 118 — 7 November 2026
+
+**A keystroke re-rendered the list to draw the highlight where it already was.**
+
+The highlight behind the playing row is re-measured whenever the rows can have
+moved: a track change, a tab, a search, a library update. Every measurement built
+a fresh `{ y, h }` object, and a fresh object is a new value to React even when the
+row has not shifted a pixel — so typing one character of a search re-rendered the
+whole list section, creating and comparing an element for every row in it, to draw
+the highlight in exactly the place it was already in. On a full phone that is five
+thousand elements per keystroke; on a rescan it happened again, on every return to
+the app.
+
+The measurement now answers with the object it already had when the numbers are
+the same, which is what lets React skip the render. A row that really moved still
+gets a new lens and still slides, and the measurement is still taken after layout,
+so nothing appears a frame late.
+
+## 117 — 7 November 2026
+
+**The list's row indices were built on every keystroke for the arrow keys.**
+
+The arrow keys step through the rows you can actually see, so the list kept a
+second array beside the filtered one: the library index of every visible row, in
+display order. It was built with the render — and the render happens on every
+keystroke of a search. On a library of five thousand songs, each character typed
+allocated a five-thousand-entry array (40 KB) for a list of indices that only the
+arrow keys ever read.
+
+It is collected inside the key handler now, which is the one place that needs it.
+Typing a search allocates nothing extra; pressing an arrow key allocates the array
+it is about to walk, exactly as before.
+
+## 116 — 7 November 2026
+
+**The visualiser measured its bars on every frame.**
+
+The bars' geometry — the gap between them, their width, the baseline they stand
+on, the tallest one, and where each of the thirty-six starts — was worked out
+inside the paint. None of it changes between one frame and the next: it depends on
+the canvas size alone. So the visualiser recomputed it thirty times a second, at
+about a hundred and forty multiplications and a dozen clamps a frame, twice over
+for the reflection, to arrive at the numbers it already had.
+
+It is measured once per resize now, along with the gradients, and each bar's x is
+kept in a table of thirty-six. The pixels are identical — the same numbers, worked
+out once instead of thirty times a second.
+
+## 115 — 7 November 2026
+
+**The import note's timer outlived the note.**
+
+Adding a folder of songs says how many it added, in a note that clears itself
+after five seconds. The timer that cleared it was fired into the void —
+`window.setTimeout(() => setNotice(null), 5000)`, with nothing keeping hold of it.
+So adding a second folder within five seconds meant the *first* add's timer wiped
+the second note about a second after it appeared, and the timer also outlived the
+app, setting state on a screen that was no longer mounted.
+
+The timer is held now: a new note cancels the old one's timer before setting its
+own, and it is cleared when the app unmounts. The splash screen's tap-to-leave
+timer — the same shape, the same problem — is held the same way.
+
+The note still appears when a folder is added and still goes after five seconds;
+what changed is that it goes when *its* five seconds are up.
+
+## 114 — 7 November 2026
+
+**A rescan re-rolled the shuffle order.**
+
+With shuffle on, the play order was thrown away and re-rolled whenever the list
+changed — and the Android shell replaces the whole list every time the app comes
+back to the foreground. So the sequence you had been listening to did not survive
+putting the phone down: unlock it, and the song that was about to play was a
+different one, and Next went somewhere new.
+
+`SET_LIBRARY` rebuilt the order with a fresh `shuffled()` of the new list. It now
+carries the sequence across, translating it from the old indices to the new ones
+through the track ids, which are what a rescan actually preserves. A song that has
+left the library drops out of the order, and a song that is new to it goes on the
+end. Only an order that was never built — an empty library — is shuffled afresh.
+
+Five tests cover it: an identical rescan changes nothing, a reordered library
+follows each song to its new index, a removed song drops out, added songs are
+appended in order, and an empty order still gets shuffled.
+
+## 113 — 7 November 2026
+
+**Turning shuffle off built the play order, then never read it.**
+
+Turning shuffle *off* built the play order, and then never read it. With shuffle
+off the order is the library order, index for index — 111 stopped allocating it
+in the unshuffled path everywhere for exactly that reason — but the one remaining
+place still made it: the toggle itself. On a 5,000-song library, turning shuffle
+off allocated a 5,000-entry array (40 KB, and the numbers 0 to 4,999) to say
+nothing at all, and dropped the shuffled order on the floor at the same time.
+
+The order is left empty when shuffle goes off, which is the state 111 established
+for it: empty until shuffle is turned on, and empty again the moment it is turned
+off. A test turns shuffle on over 500 tracks and off again, and checks the order
+is gone.
+
+## 113 — 7 November 2026
+
+**Turning shuffle off built the play order, then never read it.**
+
+Turning shuffle *off* built the play order, and then never read it. With shuffle
+off the order is the library order, index for index — 111 stopped allocating it
+in the unshuffled path everywhere for exactly that reason — but the one remaining
+place still made it: the toggle itself. On a 5,000-song library, turning shuffle
+off allocated a 5,000-entry array (40 KB, and the numbers 0 to 4,999) to say
+nothing at all, and dropped the shuffled order on the floor at the same time.
+
+The order is left empty when shuffle goes off, which is the state 111 established
+for it: empty until shuffle is turned on, and empty again the moment it is turned
+off. A test turns shuffle on over 500 tracks and off again, and checks the order
+is gone.
+
 ## 112 — 4 November 2026
 
 **The element's repeated events re-rendered the app to show what was already there.**

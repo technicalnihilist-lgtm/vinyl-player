@@ -1,0 +1,7 @@
+Fewer wasted frames and allocations: the visualiser measures its bars once per resize instead of on every frame, and the glass highlight no longer forces a layout on every pointer frame.
+Fixed: with shuffle on, a library rescan no longer re-rolls the play order every time the app comes back to the foreground.
+Fixed: turning shuffle off no longer allocates a library-sized play order it never reads.
+Fixed: importing twice within five seconds no longer wipes the second "Added N tracks" note early.
+Adding a folder reuses six probe elements instead of building one per file.
+Typing a search no longer rebuilds the list's row-index array, or re-renders the list to draw the highlight where it already was.
+Pressing play while playing, or pause while paused, no longer re-renders the app.
