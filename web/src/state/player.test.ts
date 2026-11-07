@@ -86,6 +86,42 @@ describe('an action that changes nothing keeps the same state', () => {
   });
 });
 
+describe('a play or pause that changes nothing keeps the same state', () => {
+  // The media card, the shell's echo of a hardware button and the element itself
+  // all reach these two. A press while the player is already in that state is not
+  // a change, and returning the same object is what lets React skip the render.
+  it('PLAY while it is already playing', () => {
+    const s = base(3, { isPlaying: true, status: 'playing' });
+    expect(playerReducer(s, { type: 'PLAY' })).toBe(s);
+  });
+
+  it('PLAY still starts a paused player', () => {
+    const s = base(3, { isPlaying: false, status: 'paused' });
+    const next = playerReducer(s, { type: 'PLAY' });
+    expect(next.isPlaying).toBe(true);
+    expect(next.status).toBe('playing');
+  });
+
+  it('PLAY still retries after an error, and clears the message', () => {
+    const s = base(3, { isPlaying: true, status: 'error', error: 'Playback failed.' });
+    const next = playerReducer(s, { type: 'PLAY' });
+    expect(next.status).toBe('loading');
+    expect(next.error).toBeNull();
+  });
+
+  it('PAUSE while it is already paused', () => {
+    const s = base(3, { isPlaying: false, status: 'paused' });
+    expect(playerReducer(s, { type: 'PAUSE' })).toBe(s);
+  });
+
+  it('PAUSE still stops a playing player', () => {
+    const s = base(3, { isPlaying: true, status: 'playing' });
+    const next = playerReducer(s, { type: 'PAUSE' });
+    expect(next.isPlaying).toBe(false);
+    expect(next.status).toBe('paused');
+  });
+});
+
 describe('the play order is only built when it is used', () => {
   // With shuffle off the order is the library order, index for index, so an array
   // of it is an array of the numbers 0..n-1 — five thousand entries on a full

@@ -326,10 +326,17 @@ export function playerReducer(state: PlayerState, action: Action): PlayerState {
       return { ...state, status: action.status, error };
     }
 
+    // Saying "play" while it is playing is not a change, and neither is saying
+    // "pause" while it is paused. Three things reach these two: the buttons on the
+    // system's media card, the shell echoing a hardware button back, and the
+    // element's own events. Each used to replace the state — a new object, and with
+    // it a re-render of the whole app — to say exactly what it already said.
     case 'PLAY':
+      if (state.isPlaying && state.status === 'playing' && state.error === null) return state;
       return { ...state, isPlaying: true, status: state.status === 'error' ? 'loading' : 'playing', error: null };
 
     case 'PAUSE':
+      if (!state.isPlaying && state.status === 'paused') return state;
       return { ...state, isPlaying: false, status: 'paused' };
 
     case 'TOGGLE':
