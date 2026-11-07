@@ -122,7 +122,7 @@ describe('the play order is only built when it is used', () => {
     expect(off.order).toEqual([]);
   });
 
-  it('is left alone by a rescan with shuffle off, and rebuilt with shuffle on', () => {
+  it('is left alone by a rescan with shuffle off, and kept with shuffle on', () => {
     const off = playerReducer(base(3), { type: 'SET_LIBRARY', tracks: mk(4) });
     expect(off.order).toEqual([]);
     const on = playerReducer(playerReducer(base(3), { type: 'TOGGLE_SHUFFLE' }), {
@@ -130,6 +130,50 @@ describe('the play order is only built when it is used', () => {
       tracks: mk(4),
     });
     expect([...on.order].sort((a, b) => a - b)).toEqual([0, 1, 2, 3]);
+  });
+});
+
+describe('a rescan keeps the shuffle order', () => {
+  // The Android shell replaces the whole library every time the app comes back to
+  // the foreground. Rebuilding the order for that re-rolled the sequence on every
+  // unlock, so the next song was never the one the player had just chosen.
+  const shuffled5 = () => playerReducer(base(5), { type: 'TOGGLE_SHUFFLE' });
+
+  it('is the same sequence after an identical rescan', () => {
+    const before = shuffled5();
+    const after = playerReducer(before, { type: 'SET_LIBRARY', tracks: mk(5) });
+    expect(after.order).toEqual(before.order);
+  });
+
+  it('follows a track to its new index when the library is reordered', () => {
+    const before = shuffled5();
+    // The same five songs, reported in a different order by the device.
+    const reordered = mk(5).reverse();
+    const after = playerReducer(before, { type: 'SET_LIBRARY', tracks: reordered });
+    const ids = after.order.map((i) => after.tracks[i].id);
+    expect(ids).toEqual(before.order.map((i) => before.tracks[i].id));
+  });
+
+  it('drops a song that has left the library', () => {
+    const before = shuffled5();
+    const gone = mk(5).filter((t) => t.id !== 't2');
+    const after = playerReducer(before, { type: 'SET_LIBRARY', tracks: gone });
+    expect(after.order).toHaveLength(4);
+    expect(after.order.map((i) => after.tracks[i].id).sort()).toEqual(['t0', 't1', 't3', 't4']);
+  });
+
+  it('appends songs the library has gained, on the end', () => {
+    const before = playerReducer(base(3), { type: 'TOGGLE_SHUFFLE' });
+    const after = playerReducer(before, { type: 'SET_LIBRARY', tracks: mk(5) });
+    expect(after.order).toHaveLength(5);
+    expect(after.order.slice(0, 3)).toEqual(before.order);
+    expect(after.order.slice(3)).toEqual([3, 4]);
+  });
+
+  it('still shuffles when there was no order to keep', () => {
+    const empty = base(0, { shuffle: true, order: [] });
+    const after = playerReducer(empty, { type: 'SET_LIBRARY', tracks: mk(6) });
+    expect([...after.order].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5]);
   });
 });
 

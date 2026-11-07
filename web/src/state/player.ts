@@ -92,6 +92,39 @@ function positionsOf(order: number[]): Map<number, number> {
   return positions;
 }
 
+/**
+ * The shuffle order, carried across a library change.
+ *
+ * A rescan replaces the whole list, and the Android shell runs one every time the
+ * app comes back to the foreground. With shuffle on, `SET_LIBRARY` answered that
+ * with a brand-new `shuffled()` of the new list — so the sequence you had been
+ * listening to was re-rolled every time you unlocked the phone: the song that was
+ * about to play was a different one, and Next went somewhere new for no reason.
+ *
+ * The sequence is kept instead, translated from the old indices to the new ones
+ * through the track ids, which are what survive a rescan. Tracks that have left
+ * the library drop out of it, and tracks that are new to the library go on the
+ * end. Only an order that was never built (an empty library) is shuffled afresh.
+ */
+function carryOrder(state: PlayerState, tracks: Track[], currentIndex: number): number[] {
+  if (state.order.length === 0) return shuffled(tracks.length, Math.random, currentIndex);
+
+  const at = new Map<string, number>();
+  for (let i = 0; i < tracks.length; i++) at.set(tracks[i].id, i);
+
+  const out: number[] = [];
+  const taken = new Set<number>();
+  for (let i = 0; i < state.order.length; i++) {
+    const track = state.tracks[state.order[i]];
+    const now = track ? at.get(track.id) : undefined;
+    if (now === undefined || taken.has(now)) continue;
+    taken.add(now);
+    out.push(now);
+  }
+  for (let i = 0; i < tracks.length; i++) if (!taken.has(i)) out.push(i);
+  return out;
+}
+
 export interface StepResult {
   index: number;
   /** True when playback should stop (end of list, repeat off). */
@@ -258,7 +291,7 @@ export function playerReducer(state: PlayerState, action: Action): PlayerState {
       return {
         ...state,
         tracks,
-        order: state.shuffle ? shuffled(tracks.length, Math.random, index) : state.order,
+        order: state.shuffle ? carryOrder(state, tracks, index) : state.order,
         currentIndex: index,
         currentTime: sameTrack ? state.currentTime : 0,
         duration: trackDuration(tracks, index),
