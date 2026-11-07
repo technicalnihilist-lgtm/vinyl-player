@@ -112,6 +112,16 @@ describe('the play order is only built when it is used', () => {
     expect([...s.order].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4]);
   });
 
+  it('is thrown away again when shuffle is turned off', () => {
+    // It was rebuilt as `range(n)` on the way out — a library-sized array that
+    // nothing reads, since with shuffle off the order is the index itself.
+    const on = playerReducer(base(500), { type: 'TOGGLE_SHUFFLE' });
+    expect(on.order).toHaveLength(500);
+    const off = playerReducer(on, { type: 'TOGGLE_SHUFFLE' });
+    expect(off.shuffle).toBe(false);
+    expect(off.order).toEqual([]);
+  });
+
   it('is left alone by a rescan with shuffle off, and rebuilt with shuffle on', () => {
     const off = playerReducer(base(3), { type: 'SET_LIBRARY', tracks: mk(4) });
     expect(off.order).toEqual([]);

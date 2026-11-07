@@ -371,9 +371,13 @@ export function playerReducer(state: PlayerState, action: Action): PlayerState {
 
     case 'TOGGLE_SHUFFLE': {
       const shuffle = !state.shuffle;
-      const order = shuffle
-        ? shuffled(state.tracks.length, Math.random, state.currentIndex)
-        : range(state.tracks.length);
+      // Turning shuffle *off* used to build `range(n)` — the library order, index
+      // for index — which is exactly the array 111 took out of the unshuffled
+      // path everywhere else, and for exactly the same reason: with shuffle off
+      // nothing reads it, because the order *is* the index. Turning it off on a
+      // 5,000-song library allocated a 5,000-entry array to say nothing, and
+      // dropped the shuffled one on the floor at the same time.
+      const order = shuffle ? shuffled(state.tracks.length, Math.random, state.currentIndex) : [];
       return { ...state, shuffle, order };
     }
 
