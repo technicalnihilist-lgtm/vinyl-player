@@ -15,7 +15,8 @@ import { TransportControls } from './components/TransportControls';
 import { VolumeControl } from './components/VolumeControl';
 import { SettingsSheet } from './components/SettingsSheet';
 import { Splash } from './components/Splash';
-import { ChevronDownIcon, HeartIcon } from './components/Icons';
+import { ChevronDownIcon } from './components/Icons';
+import { LikeButton, StageNow, TopBarNow } from './components/NowPlaying';
 import { OptionBar } from './components/OptionBar';
 import { TabBar } from './components/TabBar';
 import type { Tab } from './components/TabBar';
@@ -212,8 +213,7 @@ export default function App() {
         {/* Keys are prefixed so no two siblings ever share a key — duplicate keys
             among siblings make React's reconciliation drop elements. */}
         <div className="topbar__now" key={`top-${currentTrack?.id ?? 'none'}`}>
-          <span className="topbar__title">{currentTrack?.title ?? 'Your music'}</span>
-          <span className="topbar__artist">{currentTrack?.artist ?? 'Offline player'}</span>
+          <TopBarNow track={currentTrack} />
         </div>
 
         {/* Every app-level option lives in this one bar, and nowhere else. */}
@@ -238,14 +238,7 @@ export default function App() {
           )}
 
           <div className="stage__now" key={`now-${currentTrack?.id ?? 'none'}`}>
-            <h1 className="now__title">{currentTrack?.title ?? 'Your music'}</h1>
-            <p className="now__artist">
-              {currentTrack
-                ? [currentTrack.artist, currentTrack.album].filter(Boolean).join(' · ')
-                : library.available
-                  ? 'Play the songs on this device'
-                  : 'Add your music to get started'}
-            </p>
+            <StageNow track={currentTrack} hasLibrary={library.available} />
           </div>
 
           {settings.visualiser && (
@@ -293,15 +286,11 @@ export default function App() {
             />
 
             <div className="transport-row">
-              <button
-                type="button"
-                className={`glass-btn${liked ? ' is-liked' : ''}`}
-                aria-pressed={liked}
-                aria-label="Like current track"
-                onClick={() => currentTrack && actions.toggleLike(currentTrack.id)}
-              >
-                <HeartIcon size={18} filled={liked} />
-              </button>
+              <LikeButton
+                trackId={currentTrack?.id ?? null}
+                liked={liked}
+                onToggle={actions.toggleLike}
+              />
 
               <TransportControls
                 isPlaying={state.isPlaying}
