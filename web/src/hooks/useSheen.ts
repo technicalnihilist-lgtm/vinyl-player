@@ -20,7 +20,17 @@ export function useSheen(ref: RefObject<HTMLElement | null>): void {
       return;
     }
 
-    let queued = false;
+    /**
+     * The frame waiting to apply the newest pointer position, if one is.
+     *
+     * Held as a handle rather than a boolean, because a frame that is already
+     * queued has to be cancellable. It was not: the frame queued by the last
+     * move of a gesture still ran after the pointer had left the surface — and
+     * after the surface itself had gone — putting the highlight back where the
+     * pointer had been, or writing to an element that was no longer in the
+     * document.
+     */
+    let frame = 0;
     let lastX = 0;
     let lastY = 0;
 
@@ -38,7 +48,7 @@ export function useSheen(ref: RefObject<HTMLElement | null>): void {
     };
 
     const apply = () => {
-      queued = false;
+      frame = 0;
       if (!box) {
         const r = el.getBoundingClientRect();
         box = { left: r.left, top: r.top, width: r.width, height: r.height };
@@ -51,12 +61,13 @@ export function useSheen(ref: RefObject<HTMLElement | null>): void {
       lastX = e.clientX;
       lastY = e.clientY;
       // At most one write per frame, whatever the pointer is doing.
-      if (!queued) {
-        queued = true;
-        requestAnimationFrame(apply);
-      }
+      if (!frame) frame = requestAnimationFrame(apply);
     };
     const onLeave = () => {
+      // Whatever the last move queued would land after this and move the
+      // highlight back to the pointer's last position, so it is dropped first.
+      if (frame) cancelAnimationFrame(frame);
+      frame = 0;
       el.style.setProperty('--mx', '28%');
       el.style.setProperty('--my', '-12%');
     };
@@ -70,6 +81,8 @@ export function useSheen(ref: RefObject<HTMLElement | null>): void {
     const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(forgetBox) : null;
     observer?.observe(el);
     return () => {
+      if (frame) cancelAnimationFrame(frame);
+      frame = 0;
       el.removeEventListener('pointermove', onMove);
       el.removeEventListener('pointerleave', onLeave);
       window.removeEventListener('resize', forgetBox);

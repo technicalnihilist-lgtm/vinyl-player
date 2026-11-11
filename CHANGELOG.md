@@ -7,6 +7,26 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 127 — 11 November 2026
+
+**A queued highlight frame could outlive the surface it was drawn on.**
+
+The specular highlight is applied at most once per frame: a pointer move records
+where the pointer is and queues a frame, and that frame writes the position into
+the surface's custom properties. The queue was a boolean, so the frame it started
+could not be called back.
+
+Two things followed. Leaving the surface resets the highlight to its resting place
+— and the frame queued by the move just before the pointer left then ran, a
+fraction of a second later, and put the highlight back under where the pointer had
+been. And when the surface went away entirely — the settings sheet closing, the
+panel unmounting — the frame still ran, writing two custom properties into an
+element that was no longer in the document.
+
+The frame is held as a handle now. It is cancelled when the pointer leaves, before
+the resting highlight is written, and cancelled again when the hook is torn down.
+Nothing else about the highlight changes.
+
 ## 126 — 11 November 2026
 
 **Space did nothing when a button had the focus.**
