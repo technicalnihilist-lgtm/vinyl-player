@@ -7,6 +7,26 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 132 — 11 November 2026
+
+**The playlist ran a highlight nothing in it drew.**
+
+The glass surfaces carry a specular highlight that follows the pointer: `useSheen`
+tracks the pointer and writes its position into `--mx` and `--my` on the surface,
+at most once a frame. The panel has one. The list inside it was given the same
+treatment — and nothing in the list reads either property. The only rule that uses
+them is the glass surface's own highlight, and the list is not glass and contains
+none.
+
+So every pointer move across the playlist wrote two inherited custom properties on
+the list, which invalidates the style of everything under it — every row, thousands
+of them on a full phone — to move a highlight that does not exist there. The hook
+is gone from the list; the panel still tracks the pointer, which is where the
+highlight is actually drawn. The pixels are identical, because nothing was drawing
+them from the list in the first place.
+
+This release also adds the Play Store changelog for 132.
+
 ## 131 — 11 November 2026
 
 **Un-liking a song kept a key for it forever.**

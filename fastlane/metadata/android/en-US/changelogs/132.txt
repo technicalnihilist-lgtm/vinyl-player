@@ -1,0 +1,7 @@
+Fewer wasted writes and a smaller heap: the playlist no longer tracks a pointer highlight nothing in it draws, the 4D tilt stops rewriting a value the document already has, and a device track's covers are built when they are first read instead of for every song in the library.
+The blob cache keeps eight decoded sources and hands the rest back, and un-liking a song no longer leaves a key behind.
+Fixed: a resize no longer leaves the visualiser blank while the player is paused or reduced motion is on.
+Fixed: Space now activates whatever has focus, so the settings sheet can be closed from the keyboard.
+Fixed: the splash leaves on Enter or Space only, so Tab reaches the GitHub link.
+Fixed: a queued highlight frame no longer runs after the surface has gone.
+A row's duration is formatted once, and formatTime is memoised.

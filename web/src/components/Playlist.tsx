@@ -2,7 +2,6 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import type { PointerEvent as ReactPointerEvent, KeyboardEvent as ReactKeyboardEvent } from 'react';
 import type { Track } from '../types';
 import { TrackRow } from './TrackRow';
-import { useSheen } from '../hooks/useSheen';
 import { FolderIcon, PlusIcon, RefreshIcon, SearchIcon } from './Icons';
 import type { Tab } from './TabBar';
 import { stepVisible } from '../utils/playlist';
@@ -58,8 +57,14 @@ export const Playlist = memo(function Playlist({
   const filter: Filter = filterProp ?? 'all';
   /** Geometry of the sliding highlight behind the active row. */
   const [lens, setLens] = useState<{ y: number; h: number } | null>(null);
-
-  useSheen(listRef);
+  // The list used to run the pointer-tracking sheen as well, writing --mx and
+  // --my on itself at most once a frame. Nothing in the list draws from them:
+  // the only rule that reads either property is the glass surface's own
+  // highlight, and the list is not glass and holds no glass. So every mouse move
+  // over the playlist wrote two inherited custom properties — a style
+  // invalidation across every row in it, thousands of them on a full phone — to
+  // move a highlight that no element in the list has. The panel the list sits in
+  // still tracks the pointer; that is where the highlight is drawn.
 
   // On the Library tab the liked map plays no part in the filter, so it must play
   // no part in the memo either: liking one song used to rebuild the whole visible
