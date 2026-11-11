@@ -27,24 +27,67 @@ export function useDepth(enabled: boolean): void {
 
     const clamp = (v: number) => (v < -1 ? -1 : v > 1 ? 1 : v);
 
+    /**
+     * What the document was last told, so it is not told the same thing twice.
+     *
+     * `--tilt-x` and `--tilt-y` are set on the root and inherited by everything,
+     * so writing either one invalidates the style of the whole document. Both
+     * were written on every frame of the ease, including the tail of it, where
+     * the value moves by less than the four decimals that are written and the
+     * document is therefore recalculated to say exactly what it already said.
+     */
+    let writtenX = '';
+    let writtenY = '';
+
+    const write = () => {
+      const x = curX.toFixed(4);
+      if (x !== writtenX) {
+        writtenX = x;
+        root.style.setProperty('--tilt-x', x);
+      }
+      const y = curY.toFixed(4);
+      if (y !== writtenY) {
+        writtenY = y;
+        root.style.setProperty('--tilt-y', y);
+      }
+    };
+
     const tick = () => {
       if (!alive) return;
       curX += (targetX - curX) * 0.09;
       curY += (targetY - curY) * 0.09;
-      root.style.setProperty('--tilt-x', curX.toFixed(4));
-      root.style.setProperty('--tilt-y', curY.toFixed(4));
+      write();
       if (Math.abs(targetX - curX) > 0.0015 || Math.abs(targetY - curY) > 0.0015) {
         raf = requestAnimationFrame(tick);
       } else {
         curX = targetX;
         curY = targetY;
-        root.style.setProperty('--tilt-x', curX.toFixed(4));
-        root.style.setProperty('--tilt-y', curY.toFixed(4));
+        write();
         raf = 0; // settled — stop until the next event
       }
     };
+    /**
+     * Start the ease, unless it would move nothing.
+     *
+     * Every pointer move and every orientation event kicked a fresh frame, and a
+     * phone standing still — or held perfectly level — reports its orientation
+     * many times a second without the numbers changing. Each of those frames
+     * wrote two inherited custom properties, which is a style recalculation of
+     * the entire document, to draw the same tilt as the frame before. When the
+     * eased value is already on the target and the document already says so,
+     * there is nothing to do.
+     */
     const kick = () => {
-      if (!raf && alive) raf = requestAnimationFrame(tick);
+      if (raf || !alive) return;
+      if (
+        curX === targetX &&
+        curY === targetY &&
+        curX.toFixed(4) === writtenX &&
+        curY.toFixed(4) === writtenY
+      ) {
+        return;
+      }
+      raf = requestAnimationFrame(tick);
     };
 
     const onOrient = (e: DeviceOrientationEvent) => {

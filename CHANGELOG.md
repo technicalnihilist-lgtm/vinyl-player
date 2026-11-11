@@ -7,6 +7,28 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 125 — 11 November 2026
+
+**A phone standing still recalculated the whole document's style, sixty times a second.**
+
+The 4D tilt is two custom properties, `--tilt-x` and `--tilt-y`, written on the
+root element and inherited by everything under it — which is what makes one write
+lean the record, the glass and both parallax layers at once. It also means a write
+to either of them invalidates the style of the whole document.
+
+Both were written on every frame of the ease. At the tail of an ease the value
+moves by less than the four decimals that get written, so the document was
+recalculated, in full, to say exactly what it already said. And every orientation
+event started a fresh ease, and a phone reports its orientation many times a
+second while it is standing still — or held level — with the same numbers each
+time, so a still phone paid for a full style recalculation per frame to draw a
+tilt that had not moved.
+
+The hook remembers what it last told the document and writes only when the string
+would differ, and an event whose target is already reached starts no frame at all.
+The tilt itself is unchanged: the same easing, the same clamp, the same angles on
+the same elements.
+
 ## 124 — 11 November 2026
 
 **The blob cache never forgot anything.**
