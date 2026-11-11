@@ -111,7 +111,50 @@ export class AudioEngine {
   }
 }
 
+/**
+ * How many decoded sources are kept, most recent last.
+ *
+ * Eight is more than a player ever needs at once — the track that is playing,
+ * the one before it, and whatever was tried in between — and it is the point at
+ * which the cache stops being a cache and starts being a leak. See below.
+ */
+export const BLOB_CACHE_LIMIT = 8;
+
 const blobCache = new Map<string, string>();
+
+/**
+ * Remember `url` for `src`, and forget the least recently asked-for source once
+ * there are too many.
+ *
+ * This map used to grow for the life of the page: every data-URI source that was
+ * ever played kept its Blob — the decoded copy of the whole audio file — alive
+ * for as long as the app was open. A few dozen of them is tens of megabytes that
+ * nothing can free, and a listener who works through a long playlist holds all
+ * of it. The cache is worth keeping (it is what stops the same source being
+ * decoded twice) but not worth keeping everything.
+ *
+ * Map iterates in insertion order, and a source is re-inserted when it is asked
+ * for again, so the first entry is always the one nothing has touched for
+ * longest — never the track that is playing now, which was the last to be
+ * resolved.
+ */
+function remember(src: string, url: string): void {
+  blobCache.set(src, url);
+  while (blobCache.size > BLOB_CACHE_LIMIT) {
+    const oldest = blobCache.keys().next();
+    if (oldest.done) break;
+    const dropped = blobCache.get(oldest.value);
+    blobCache.delete(oldest.value);
+    if (dropped) {
+      try {
+        // Hand the blob back: this is the call that actually frees it.
+        URL.revokeObjectURL(dropped);
+      } catch {
+        /* ignore — the collector takes it when the page goes */
+      }
+    }
+  }
+}
 
 /**
  * Turn a data-URI source into a same-origin Blob URL. This keeps the Web Audio
@@ -121,7 +164,13 @@ const blobCache = new Map<string, string>();
 export function resolvePlayableUrl(src: string): string {
   if (!src.startsWith('data:')) return src;
   const cached = blobCache.get(src);
-  if (cached) return cached;
+  if (cached) {
+    // Asked for again: move it to the back of the queue, so the source in use is
+    // the last one that can be dropped.
+    blobCache.delete(src);
+    blobCache.set(src, cached);
+    return cached;
+  }
   try {
     const comma = src.indexOf(',');
     const meta = src.slice(5, comma);
@@ -138,7 +187,7 @@ export function resolvePlayableUrl(src: string): string {
       blob = new Blob([decodeURIComponent(body)], { type: mime });
     }
     const url = URL.createObjectURL(blob);
-    blobCache.set(src, url);
+    remember(src, url);
     return url;
   } catch {
     return src;

@@ -7,6 +7,26 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 124 — 11 November 2026
+
+**The blob cache never forgot anything.**
+
+A `data:` source cannot be played and analysed at the same time — the analyser
+needs a same-origin URL — so it is turned into a Blob URL first, and that URL is
+kept, because decoding the same source twice is work with nothing to show for it.
+
+The map holding them was never trimmed. Every data-URI source that was ever played
+kept its Blob — the decoded copy of the whole audio file — alive for as long as the
+app was open, so a listener working through a long playlist accumulated tens of
+megabytes that nothing could free. It holds the eight most recently asked-for
+sources now, drops the rest, and calls `URL.revokeObjectURL` on each one it drops,
+which is the call that actually hands the memory back.
+
+A source that is asked for again moves to the back of the queue, so the one being
+dropped is always one nothing is playing. Five tests cover it: a repeated source
+is answered from the cache, an old one is decoded afresh, the source just asked for
+survives the trim, and the cache never holds more than the limit.
+
 ## 123 — 11 November 2026
 
 **A resize wiped the visualiser and nothing drew it again.**
