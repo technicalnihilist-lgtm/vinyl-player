@@ -53,6 +53,18 @@ describe('mapDeviceTracks', () => {
     expect(t.fallbackArt).not.toContain('data:');
   });
 
+  it('builds a cover when it is first read, and answers the same one after', () => {
+    const t = mapDeviceTracks(PAYLOAD)[0];
+    // Worked out on first read rather than for every song in the library: the
+    // property is an accessor, so nothing was built when the track was made.
+    const descriptor = Object.getOwnPropertyDescriptor(t, 'fallbackArt');
+    expect(typeof descriptor?.get).toBe('function');
+    const first = t.fallbackArt;
+    expect(first).toContain('radial-gradient');
+    expect(t.fallbackArt).toBe(first);
+    expect(t.artwork).toBe('https://appassets.androidplatform.net/art/41');
+  });
+
   it('never shows blank titles or artists', () => {
     const t = mapDeviceTracks(PAYLOAD)[2];
     expect(t.title).toBe('Unknown track');

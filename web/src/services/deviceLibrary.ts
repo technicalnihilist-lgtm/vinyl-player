@@ -74,10 +74,24 @@ export function mapDeviceTracks(raw: unknown): Track[] {
     const artist = str(o.artist).trim() || 'Unknown artist';
     const album = str(o.album).trim();
     const palette = PALETTES[hashOf(title + artist) % PALETTES.length];
-
-    // Always have procedural art to fall back on if the file has no picture.
-    const fallbackArt = coverGradient(palette, (hashOf(id) % 900) + 50);
     const hasArt = o.hasArt !== false;
+
+    /*
+     * Both covers are worked out when they are first read, not when the track is
+     * made.
+     *
+     * The procedural cover is about three hundred characters of CSS, built from
+     * a hash and five multiplications; the artwork URL is a concat and an
+     * encodeURIComponent. Doing that for every song in the phone's library meant a
+     * few thousand strings — a megabyte and a half of them on a large library —
+     * built before the first row could be drawn, for covers only the dozen rows on
+     * screen ever read. Nothing else changes: each is built once, the first time
+     * something asks for it, and the same string is answered afterwards.
+     */
+    let coverArt: string | null = null;
+    let deviceArt: string | null = null;
+    const cover = () => (coverArt ??= coverGradient(palette, (hashOf(id) % 900) + 50));
+    const art = () => (deviceArt ??= `${NATIVE_ORIGIN}/art/${encodeURIComponent(id)}`);
 
     out.push({
       id: `device-${id}`,
@@ -87,8 +101,13 @@ export function mapDeviceTracks(raw: unknown): Track[] {
       src: `${NATIVE_ORIGIN}/audio/${encodeURIComponent(id)}`,
       duration: num(o.duration),
       palette,
-      artwork: hasArt ? `${NATIVE_ORIGIN}/art/${encodeURIComponent(id)}` : fallbackArt,
-      fallbackArt,
+      get artwork(): string {
+        return hasArt ? art() : cover();
+      },
+      // Always have procedural art to fall back on if the file has no picture.
+      get fallbackArt(): string {
+        return cover();
+      },
       source: 'device',
     });
   }

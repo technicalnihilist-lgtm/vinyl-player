@@ -7,6 +7,26 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 129 — 11 November 2026
+
+**Every song's cover was built before the first row could be drawn.**
+
+A device track carries two covers: the picture inside the file, served from the
+app's own origin, and a procedural gradient to fall back on when there is no
+picture — which is most of the time. Both were built while the library was being
+read, for every song on the phone.
+
+The gradient is about three hundred characters of CSS worked out from a hash and
+five multiplications, and the artwork URL is a concat and an `encodeURIComponent`.
+On a library of three thousand songs that is six thousand strings — well over a
+megabyte of them — built during the scan, before a single row was on screen, for
+covers that only the dozen rows in view ever read. Each is now built the first
+time something asks for it, and the same string is answered afterwards. The
+library arrives sooner and the heap holds the covers of the rows that exist.
+
+The picture itself is unchanged, and so is the fallback: the same gradient from
+the same hash, drawn by the same CSS.
+
 ## 128 — 11 November 2026
 
 **Every row rebuilt its length twice, from scratch, on every render.**
