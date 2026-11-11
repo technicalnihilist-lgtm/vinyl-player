@@ -7,6 +7,26 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 128 — 11 November 2026
+
+**Every row rebuilt its length twice, from scratch, on every render.**
+
+`formatTime` is the busiest function in the interface: every row of the playlist
+draws the length of its song — once beside the title, once inside the label a
+screen reader reads — and the seek bar draws two more. Each call built its answer
+from nothing: two `Math.floor`s, a `String`, a `padStart` and a template literal.
+On a library of a few thousand songs that is a few thousand string builds per
+render pass, for numbers that had not changed and would not change.
+
+It is memoised now, keyed by the whole second that gets drawn, so 254.43 and 254.9
+share the entry their answer comes from. A library has far fewer distinct song
+lengths than it has songs, and a song whose metadata has not been read yet is `0`
+on every row — the two cases the cache is for. It holds 512 entries and empties
+itself when full, so it cannot grow with a player that has been left running.
+
+The row also formats its length once instead of twice. The strings it draws are
+byte for byte what they were; there are just fewer of them built.
+
 ## 127 — 11 November 2026
 
 **A queued highlight frame could outlive the surface it was drawn on.**

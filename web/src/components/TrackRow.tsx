@@ -30,6 +30,11 @@ export const TrackRow = memo(function TrackRow({
   onToggleLike,
   showNumbers = true,
 }: Props) {
+  // The row draws its length twice — beside the title and in the label a screen
+  // reader reads — so it is formatted once. On a full library that was two
+  // strings built per row per render for one number.
+  const length = formatTime(track.duration);
+
   return (
     <li
       className={`track-row${isActive ? ' is-active' : ''}`}
@@ -39,7 +44,7 @@ export const TrackRow = memo(function TrackRow({
         type="button"
         className="row"
         aria-current={isActive ? 'true' : undefined}
-        aria-label={`${track.title} — ${track.artist}, ${formatTime(track.duration)}`}
+        aria-label={`${track.title} — ${track.artist}, ${length}`}
         onClick={() => onSelect(index)}
       >
         <span className="row__lead" aria-hidden="true">
@@ -57,7 +62,7 @@ export const TrackRow = memo(function TrackRow({
           <span className="row__artist">{track.artist}</span>
         </span>
 
-        <span className="row__duration">{formatTime(track.duration)}</span>
+        <span className="row__duration">{length}</span>
       </button>
 
       <button

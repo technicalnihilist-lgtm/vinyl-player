@@ -16,6 +16,21 @@ describe('formatTime', () => {
     expect(formatTime(Infinity)).toBe('0:00');
     expect(formatTime(-5)).toBe('0:00');
   });
+
+  it('answers a time it has already formatted with the same string', () => {
+    expect(formatTime(199)).toBe('3:19');
+    expect(formatTime(199)).toBe('3:19');
+    // The same second, from a different number of decimals.
+    expect(formatTime(199.8)).toBe('3:19');
+  });
+
+  it('stays correct after more distinct times than it keeps', () => {
+    for (let i = 0; i < 2000; i++) expect(formatTime(i)).toBe(formatTime(i));
+    expect(formatTime(0)).toBe('0:00');
+    expect(formatTime(75)).toBe('1:15');
+    expect(formatTime(3725)).toBe('1:02:05');
+    expect(formatTime(-1)).toBe('0:00');
+  });
 });
 
 describe('clampTime / progressPercent', () => {
