@@ -23,6 +23,14 @@ import type { Tab } from './components/TabBar';
 import { publishNowPlaying, onMediaAction } from './services/nowPlaying';
 import { hasSystemVolume, setSystemVolume, onSystemVolume } from './services/systemVolume';
 
+/**
+ * The things a keyboard activates with Space, and therefore the things that keep
+ * it. See the key handler below.
+ */
+const SPACE_OWNS_IT =
+  'button, a[href], summary, select, [role="button"], [role="switch"], ' +
+  '[role="radio"], [role="slider"], [role="menuitem"]';
+
 export default function App() {
   const { state, engine, currentTrack, actions, library } = usePlayer();
   const reducedMotion = useReducedMotion();
@@ -104,6 +112,17 @@ export default function App() {
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
       if (e.code === 'Space') {
+        // Space is the app's play/pause key, and it is also how a keyboard
+        // activates whatever has focus. Taking it for the document meant that
+        // with the focus on any button — the one in the settings sheet, a tab, a
+        // row in the playlist — Space did nothing at all: the browser's own
+        // activation was cancelled, and the player was toggled instead, so a
+        // keyboard could not open settings, close the sheet, or pick a tab.
+        //
+        // Anything that activates on Space keeps it. The page itself still does:
+        // with the focus on nothing, or on a plain part of the layout, Space
+        // plays and pauses exactly as before.
+        if (t?.closest?.(SPACE_OWNS_IT)) return;
         e.preventDefault();
         actions.toggle();
       } else if (e.shiftKey && e.key === 'ArrowRight') {

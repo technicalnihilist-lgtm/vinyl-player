@@ -7,6 +7,23 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 126 — 11 November 2026
+
+**Space did nothing when a button had the focus.**
+
+Space is the player's play/pause key, and the app takes it for the whole document:
+the handler cancels the browser's default action and toggles playback. But Space is
+also how a keyboard activates whatever has focus. So with the focus on any button —
+the palette or settings button in the top bar, a tab at the bottom, a row in the
+playlist, a switch in the settings sheet, **Done**, **Reset** — pressing Space
+produced no click at all, and started or stopped the music instead. A keyboard user
+could tab to the settings sheet and then not close it.
+
+The handler now leaves Space alone when the focus is on something that activates
+with it: buttons, links, the seek slider, the switches and the menu items. With the
+focus on nothing, or on a plain part of the layout, Space still plays and pauses
+exactly as before.
+
 ## 125 — 11 November 2026
 
 **A phone standing still recalculated the whole document's style, sixty times a second.**
