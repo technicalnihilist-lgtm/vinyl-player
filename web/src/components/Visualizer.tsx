@@ -63,6 +63,23 @@ export const Visualizer = memo(function Visualizer({ engine, isPlaying, reducedM
     if (!ctx) return;
 
     let raf = 0;
+    /**
+     * Paints one frame, and one frame only.
+     *
+     * Assigning `canvas.width` or `canvas.height` wipes the canvas — that is how
+     * a canvas is cleared — and only the paint loop ever redrew it. So the loop
+     * is what made the bars survive a resize, and the loop is asleep in two
+     * ordinary cases: while the player is paused and the bars have settled, and
+     * whenever reduced motion is on, where it never starts at all. Rotate the
+     * phone in either of those and the visualiser came back blank, which is a
+     * picture the listener could see was wrong.
+     *
+     * The resize handler below repaints through this when no frame is already
+     * scheduled. It is assigned further down, once `step()` exists; a
+     * ResizeObserver callback can only arrive after this effect body has run, so
+     * the placeholder is never what paints.
+     */
+    let repaint: () => void = () => {};
     let width = 1;
     let height = 1;
     let grad: CanvasGradient | null = null;
@@ -112,7 +129,12 @@ export const Visualizer = memo(function Visualizer({ engine, isPlaying, reducedM
       buildGradients();
     };
     resize();
-    const ro = new ResizeObserver(resize);
+    const ro = new ResizeObserver(() => {
+      resize();
+      // The resize just emptied the canvas; draw it again unless the loop is
+      // going to do it on the next frame anyway.
+      if (!raf) repaint();
+    });
     ro.observe(canvas);
 
     let zeroFrames = 0;
@@ -223,6 +245,11 @@ export const Visualizer = memo(function Visualizer({ engine, isPlaying, reducedM
       // The bars have settled and nothing is playing: that last paint was the
       // final one, so the loop can stop until playback resumes.
       return idle && !moving;
+    };
+
+    // From here on a resize has a way to draw the cleared canvas itself.
+    repaint = () => {
+      step();
     };
 
     if (reducedMotion) {

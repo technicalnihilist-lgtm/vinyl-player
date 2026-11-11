@@ -7,6 +7,22 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 123 — 11 November 2026
+
+**A resize wiped the visualiser and nothing drew it again.**
+
+Giving a canvas a new width or height is how it is cleared — it comes back blank,
+with everything drawn on it gone. Only the paint loop ever drew on it, and that
+loop is deliberately asleep in two ordinary situations: while the player is paused
+and the bars have come to rest, and whenever reduced motion is on, where it never
+starts at all.
+
+So rotating the phone, or resizing a desktop window, with the player paused left an
+empty rectangle where the bars had been, and it stayed empty until playback
+started. The resize handler now repaints the frame it just cleared, through the
+same `step()` the loop uses, whenever no frame is already scheduled. Nothing is
+drawn twice: a running loop redraws on its own next frame.
+
 ## 122 — 7 November 2026
 
 **Pressing play while it was playing re-rendered the app.**
