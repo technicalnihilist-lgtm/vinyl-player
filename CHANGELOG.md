@@ -7,6 +7,20 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 130 — 11 November 2026
+
+**Any key dismissed the splash, including Tab.**
+
+The opening screen is a button — press it and it goes — so it listens for a key
+press as well as a tap. It left on *any* key: Tab, Shift, a stray letter, a
+modifier. Pressing Tab to move the focus onto the GitHub link on that screen
+dismissed the screen instead, and took the focus with it, so the one link on it
+could not be reached from a keyboard at all.
+
+It leaves on Enter and Space now, which is what activating a button means, and
+ignores everything else. The tap-to-leave behaviour, and the timer that leaves on
+its own, are untouched.
+
 ## 129 — 11 November 2026
 
 **Every song's cover was built before the first row could be drawn.**

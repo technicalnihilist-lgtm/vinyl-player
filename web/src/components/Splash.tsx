@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { APP_VERSION } from '../version';
 
 const REPO = 'https://github.com/technicalnihilist-lgtm/vinyl-player';
@@ -30,6 +31,20 @@ export function Splash({ onDone }: { onDone: () => void }) {
     tapTimer.current = window.setTimeout(onDone, 420);
   };
 
+  /**
+   * Only the keys that mean "activate".
+   *
+   * The screen is a button, so it leaves when it is pressed — and it left on any
+   * key at all: Tab, Shift, a stray letter. Pressing Tab to move the focus onto
+   * the GitHub link dismissed the screen instead, and the focus went with it, so
+   * a keyboard could never reach the one link on it.
+   */
+  const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+    e.preventDefault();
+    leave();
+  };
+
   return (
     <div
       className={`splash${leaving ? ' is-leaving' : ''}`}
@@ -37,7 +52,7 @@ export function Splash({ onDone }: { onDone: () => void }) {
       tabIndex={0}
       aria-label="Vinyl Player, available on GitHub. Tap to continue."
       onClick={leave}
-      onKeyDown={leave}
+      onKeyDown={onKeyDown}
     >
       <div className="splash__glow" aria-hidden="true" />
 
