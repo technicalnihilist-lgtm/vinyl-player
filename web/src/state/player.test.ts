@@ -26,6 +26,30 @@ describe('shuffled()', () => {
   });
 });
 
+describe('TOGGLE_LIKE', () => {
+  it('marks a song liked, then unlikes it', () => {
+    const once = playerReducer(base(), { type: 'TOGGLE_LIKE', id: 't1' });
+    expect(once.liked['t1']).toBe(true);
+    const twice = playerReducer(once, { type: 'TOGGLE_LIKE', id: 't1' });
+    expect(!!twice.liked['t1']).toBe(false);
+  });
+
+  it('leaves no key behind when a song is un-liked', () => {
+    const liked = playerReducer(base(), { type: 'TOGGLE_LIKE', id: 't1' });
+    const unliked = playerReducer(liked, { type: 'TOGGLE_LIKE', id: 't1' });
+    // The map grows with what is liked, not with everything ever tried.
+    expect(Object.keys(unliked.liked)).toEqual([]);
+    expect('t1' in unliked.liked).toBe(false);
+  });
+
+  it('keeps the other songs liked', () => {
+    let state = playerReducer(base(), { type: 'TOGGLE_LIKE', id: 't0' });
+    state = playerReducer(state, { type: 'TOGGLE_LIKE', id: 't2' });
+    state = playerReducer(state, { type: 'TOGGLE_LIKE', id: 't0' });
+    expect(state.liked).toEqual({ t2: true });
+  });
+});
+
 describe('step()', () => {
   it('advances forward and wraps with repeat=all', () => {
     const s = base(3, { currentIndex: 2, repeat: 'all' });

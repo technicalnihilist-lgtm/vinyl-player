@@ -7,6 +7,24 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 131 — 11 November 2026
+
+**Un-liking a song kept a key for it forever.**
+
+A like was stored as a boolean per song, so un-liking wrote `false` rather than
+removing anything. The map therefore grew with every song that had ever been
+tried, not with the songs that are liked: like a song, change your mind, and the
+key stayed, in memory and — until the next save dropped it — in storage as well.
+
+`liked` is copied on every tap, handed to the playlist on every render and
+serialised on every save, so a listener who had worked through a few thousand songs
+carried a map that was mostly the word "false". Un-liking removes the key now, so
+the map holds exactly the songs that are liked — which is what the stored blob has
+always contained, and what every reader already assumed.
+
+Three tests cover it: a like marks the song, an un-like leaves nothing behind, and
+the songs that are still liked keep their hearts.
+
 ## 130 — 11 November 2026
 
 **Any key dismissed the splash, including Tab.**

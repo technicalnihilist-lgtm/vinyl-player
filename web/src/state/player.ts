@@ -426,8 +426,20 @@ export function playerReducer(state: PlayerState, action: Action): PlayerState {
       return { ...state, repeat: next };
     }
 
-    case 'TOGGLE_LIKE':
-      return { ...state, liked: { ...state.liked, [action.id]: !state.liked[action.id] } };
+    // An un-like is the absence of an entry, not an entry that says `false`.
+    //
+    // Storing the `false` kept a key for every song that had ever been un-liked,
+    // and `liked` is copied on every tap and handed to the list on every render.
+    // A listener who had tried a few thousand songs and moved on carried a map
+    // that was mostly the word "false" — and the blob written to storage was
+    // carrying it too until the next save dropped it. Nothing reads the
+    // difference: a like is `liked[id] === true` either way.
+    case 'TOGGLE_LIKE': {
+      const liked = { ...state.liked };
+      if (liked[action.id]) delete liked[action.id];
+      else liked[action.id] = true;
+      return { ...state, liked };
+    }
 
     default:
       return state;
