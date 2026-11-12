@@ -7,6 +7,20 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 139 — 12 November 2026
+
+**The offline shell precached 374 KB of icons the page never reads.**
+
+Installing the service worker downloaded and wrote every file in its shell list:
+the two icons the page itself asks for, and the three 512-pixel launcher icons
+that only the operating system reads — 179 KB, 167 KB and 37 KB of PNG stored on
+the device at install time for something no page load ever requests.
+
+The two the page uses stay in the shell. The launcher icons are still cached, by
+the same fetch handler, the first time the browser asks for them while installing
+the app. Nothing about installing or running the app changes; there is just less
+written on the first launch.
+
 ## 138 — 12 November 2026
 
 **Reading the phone's library built a string per song just to hash it.**

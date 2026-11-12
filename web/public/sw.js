@@ -7,14 +7,18 @@
  */
 const CACHE = 'vinyl-shell-v1';
 
+// Only what a page load actually reads.
+//
+// The three 512-pixel launcher icons (179 KB, 167 KB and 37 KB) were precached
+// too, and no page ever asks for them — they are read by the operating system
+// when the app is installed, and the fetch handler below caches them the first
+// time the browser wants them. Precaching them wrote 374 KB to the device at
+// install time for files the running app never opens.
 const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icons/favicon.png',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/icon-maskable-512.png',
   './icons/apple-touch-icon.png',
 ];
 
