@@ -109,6 +109,14 @@ export const Visualizer = memo(function Visualizer({ engine, isPlaying, reducedM
     let baseline = 1;
     let maxH = 1;
     const barX = new Float64Array(BARS);
+    // One height per bar per frame, worked out once and shared by both passes.
+    //
+    // The body pass and the reflection both asked for `Math.min(1, level)` and
+    // `Math.pow(level, 0.82) * maxH`, so the reflection re-derived, for all
+    // thirty-six bars, a height the body had just computed: thirty-six `pow`
+    // calls and seventy-two clamps a frame, thirty times a second, to arrive at
+    // numbers that were already in hand.
+    const heights = new Float64Array(BARS);
 
     const measureBars = () => {
       gap = Math.max(2, (width / BARS) * 0.34);
@@ -147,6 +155,12 @@ export const Visualizer = memo(function Visualizer({ engine, isPlaying, reducedM
       ctx.clearRect(0, 0, width, height);
       if (!grad) buildGradients();
 
+      // The heights both passes draw from, once each. Same numbers, same power.
+      for (let i = 0; i < BARS; i++) {
+        const level = Math.min(1, levels[i]);
+        heights[i] = level > 0 ? Math.pow(level, 0.82) * maxH : 0;
+      }
+
       // One path and one fill per pass. Every bar used to begin its own path,
       // round four corners and fill on its own — up to 72 fills in a frame for a
       // picture that is one colour. The bars share a single vertical gradient, so
@@ -155,7 +169,7 @@ export const Visualizer = memo(function Visualizer({ engine, isPlaying, reducedM
       for (let i = 0; i < BARS; i++) {
         const level = Math.min(1, levels[i]);
         if (level < 0.012) continue;
-        const h = Math.max(3, Math.pow(level, 0.82) * maxH);
+        const h = Math.max(3, heights[i]);
         barPath(ctx, barX[i], baseline - h, barW, h, barW / 2);
       }
       ctx.fillStyle = grad as CanvasGradient;
@@ -165,7 +179,7 @@ export const Visualizer = memo(function Visualizer({ engine, isPlaying, reducedM
       for (let i = 0; i < BARS; i++) {
         const level = Math.min(1, levels[i]);
         if (level < 0.03) continue;
-        const h = Math.max(2, Math.pow(level, 0.82) * maxH) * 0.6;
+        const h = Math.max(2, heights[i]) * 0.6;
         barPath(ctx, barX[i], baseline + 6, barW, h, barW / 2);
       }
       ctx.fillStyle = reflect as CanvasGradient;

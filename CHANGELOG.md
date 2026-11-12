@@ -7,6 +7,20 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 137 — 12 November 2026
+
+**The visualiser worked out every bar's height twice a frame.**
+
+Each frame draws the bars and then their reflection, and both passes asked for the
+same number: `Math.min(1, level)` and `Math.pow(level, 0.82) * maxH`. So the
+reflection re-derived, for all thirty-six bars, a height the body pass had
+computed a moment earlier — thirty-six `Math.pow` calls and seventy-two clamps a
+frame, at thirty frames a second, to arrive at numbers that were already in hand.
+
+The heights are worked out once a frame into a table the two passes share. The
+pixels are identical — the same numbers raised to the same power — and the
+reflection now costs one multiply per bar.
+
 ## 136 — 12 November 2026
 
 **Every heart tap copied the whole likes map to store it.**
