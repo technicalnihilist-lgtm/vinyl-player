@@ -7,6 +7,22 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 141 — 12 November 2026
+
+**Seeking into a song read the file one byte at a time.**
+
+Serving a range request means positioning the stream at the byte the player asked
+for. The skip fell back to `in.read()` — a single byte — whenever
+`InputStream.skip` returned nothing, and a `ParcelFileDescriptor` stream is exactly
+the kind that does: it is a pipe, not a file, and it has no position to seek to. So
+seeking to five minutes into a ten-megabyte track performed five million
+single-byte reads before the first sample came back, and the seek took as long as
+the file was big.
+
+The fallback reads through an eight-kilobyte buffer, so the same seek costs a few
+hundred reads. The bytes handed to the player are identical and in the same order;
+only the number of calls needed to reach them changes.
+
 ## 140 — 12 November 2026
 
 **Every cold start scanned the library twice.**

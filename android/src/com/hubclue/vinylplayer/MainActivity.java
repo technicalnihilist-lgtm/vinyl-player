@@ -924,16 +924,33 @@ public class MainActivity extends Activity {
         }
     }
 
+    /**
+     * Move a stream forward by `n` bytes.
+     *
+     * The fallback for a stream that cannot skip was `in.read()` — one byte — and
+     * a `ParcelFileDescriptor` stream is exactly the kind that cannot: it is a
+     * pipe, not a file, and it has no position to seek to. Seeking five minutes
+     * into a ten-megabyte track therefore performed five million single-byte
+     * reads before the first sample was returned, and the seek took as long as
+     * the file was big.
+     *
+     * The fallback reads through a buffer now, so the same seek costs a few
+     * hundred reads. The bytes handed to the player are identical and in the same
+     * order; only the number of calls to reach them changes.
+     */
     private static long skipFully(InputStream in, long n) throws IOException {
         long remaining = n;
+        byte[] scratch = new byte[8192];
         while (remaining > 0) {
             long skipped = in.skip(remaining);
-            if (skipped <= 0) {
-                if (in.read() == -1) break;
-                remaining--;
-            } else {
+            if (skipped > 0) {
                 remaining -= skipped;
+                continue;
             }
+            int want = (int) Math.min(scratch.length, remaining);
+            int read = in.read(scratch, 0, want);
+            if (read <= 0) break;
+            remaining -= read;
         }
         return n - remaining;
     }
