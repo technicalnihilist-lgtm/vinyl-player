@@ -7,6 +7,21 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 140 — 12 November 2026
+
+**Every cold start scanned the library twice.**
+
+`onCreate` asks for a scan, and `onResume` asks for another — and `onCreate` is
+always followed by `onResume`, so opening the app ran two full MediaStore queries
+and built the whole library JSON twice, the second starting while the first was
+still reading, for a list that could not have changed in between. On a large
+library that is the most expensive thing the app does on launch, and it was paid
+twice.
+
+One scan runs at a time now. A request that arrives during a scan is remembered
+and run once the running one has published, so a permission granted mid-scan, or
+a refresh the listener asked for, is still honoured — it waits instead of racing.
+
 ## 139 — 12 November 2026
 
 **The offline shell precached 374 KB of icons the page never reads.**

@@ -82,6 +82,10 @@ public class MainActivity extends Activity {
     private WebView web;
     /** Serialised library, read from the JS thread and written from the UI thread. */
     private volatile String libraryJson = "{\"permission\":\"unknown\",\"scanning\":true,\"tracks\":[]}";
+    /** True while the library-scan thread is reading the library. */
+    private volatile boolean scanning = false;
+    /** A scan asked for while one was already running, to be done when it ends. */
+    private volatile boolean rescanWanted = false;
     private final LruCache<String, byte[]> artCache = new LruCache<>(64);
 
     // ------------------------------------------------------- now playing card
@@ -508,13 +512,46 @@ public class MainActivity extends Activity {
     }
 
     // -------------------------------------------------------------- the library
+    /**
+     * Read the device's music library on a thread of its own.
+     *
+     * One scan at a time. `onCreate` asks for a scan and `onResume` asks for
+     * another, and `onCreate` is always followed by `onResume` — so every cold
+     * start ran two full MediaStore queries and built the whole library JSON
+     * twice, the second starting while the first was still reading, for a list
+     * that could not have changed in between. On a large library that is the most
+     * expensive thing the app does on launch, paid twice.
+     *
+     * A request that arrives during a scan is remembered rather than dropped, so
+     * a permission granted mid-scan, or a refresh the listener asked for, still
+     * happens — it waits for the running scan to publish instead of racing it.
+     */
     private void scanLibraryAsync() {
+        if (scanning) {
+            rescanWanted = true;
+            return;
+        }
+        scanning = true;
         new Thread(() -> {
-            final String json = buildLibraryJson();
-            runOnUiThread(() -> {
-                libraryJson = json;
-                pushLibrary();
-            });
+            String json = null;
+            try {
+                json = buildLibraryJson();
+            } catch (Exception ignored) {
+                // Unreadable library — report nothing rather than crash.
+            } finally {
+                scanning = false;
+            }
+            final String result = json;
+            if (result != null) {
+                runOnUiThread(() -> {
+                    libraryJson = result;
+                    pushLibrary();
+                });
+            }
+            if (rescanWanted) {
+                rescanWanted = false;
+                scanLibraryAsync();
+            }
         }, "library-scan").start();
     }
 
