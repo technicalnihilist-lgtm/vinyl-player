@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { mapDeviceTracks } from './deviceLibrary';
 
+// The eight palettes a device track can be given, in the order they are tried.
+const PALETTES: [string, string, string][] = [
+  ['#7b2ff7', '#f107a3', '#ffd166'],
+  ['#00c6ff', '#0072ff', '#a8ff78'],
+  ['#f7971e', '#ffd200', '#ff5f6d'],
+  ['#12c2e9', '#c471ed', '#f64f59'],
+  ['#43cea2', '#185a9d', '#e0f7fa'],
+  ['#8e2de2', '#4a00e0', '#c4b5fd'],
+  ['#fc466b', '#3f5efb', '#fddb92'],
+  ['#f953c6', '#b91d73', '#ffd6e0'],
+];
+const PALETTE_OF = (hash: number) => PALETTES[hash % PALETTES.length];
+
 // Shaped exactly like the JSON the Android MediaStore bridge returns.
 const PAYLOAD = {
   permission: 'granted',
@@ -70,6 +83,21 @@ describe('mapDeviceTracks', () => {
     expect(t.title).toBe('Unknown track');
     expect(t.artist).toBe('Unknown artist');
     expect(t.duration).toBe(0);
+  });
+
+  it('gives a song the same palette it was given before the hash changed', () => {
+    // The palette used to come from `hashOf(title + artist)`. Hashing the two
+    // strings in turn is the same walk over the same character codes, so every
+    // song in every existing library keeps the cover it has always had.
+    const legacy = (s: string) => {
+      let h = 0;
+      for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+      return Math.abs(h);
+    };
+    const tracks = mapDeviceTracks(PAYLOAD);
+    expect(tracks[0].palette).toEqual(PALETTE_OF(legacy('Tum Hi Ho' + 'Arijit Singh')));
+    expect(tracks[1].palette).toEqual(PALETTE_OF(legacy('Kesariya' + 'Arijit Singh')));
+    expect(tracks[2].palette).toEqual(PALETTE_OF(legacy('Unknown track' + 'Unknown artist')));
   });
 
   it('survives a malformed payload', () => {

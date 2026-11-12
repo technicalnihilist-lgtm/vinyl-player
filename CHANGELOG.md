@@ -7,6 +7,20 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 138 — 12 November 2026
+
+**Reading the phone's library built a string per song just to hash it.**
+
+A device track's palette is chosen from `hashOf(title + artist)`. On a library of
+three thousand songs that is three thousand concatenated strings allocated during
+the scan — each one immediately garbage — to arrive at a number that is simply the
+character codes of the two strings one after the other, which is exactly what the
+hash walks.
+
+`hashOfPair` walks them in turn and allocates nothing. The palette a song gets is
+unchanged, which a test now pins: the same title and artist still land in the same
+one of the eight.
+
 ## 137 — 12 November 2026
 
 **The visualiser worked out every bar's height twice a frame.**

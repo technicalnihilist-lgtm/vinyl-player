@@ -47,6 +47,23 @@ function hashOf(s: string): number {
   return Math.abs(h);
 }
 
+/**
+ * The same hash, over two strings, without building the string they would be
+ * joined into.
+ *
+ * A track's palette comes from `hashOf(title + artist)`. On a library of three
+ * thousand songs that is three thousand concatenated strings allocated during the
+ * scan — every one of them immediately garbage — to arrive at a number that is
+ * just the character codes of the two strings one after the other, which is
+ * exactly what this walks. The palette a song is given does not change.
+ */
+function hashOfPair(a: string, b: string): number {
+  let h = 0;
+  for (let i = 0; i < a.length; i++) h = (h * 31 + a.charCodeAt(i)) | 0;
+  for (let i = 0; i < b.length; i++) h = (h * 31 + b.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
 const idStr = (v: unknown): string =>
   typeof v === 'string' ? v : typeof v === 'number' && Number.isFinite(v) ? String(v) : '';
@@ -73,7 +90,7 @@ export function mapDeviceTracks(raw: unknown): Track[] {
     const title = str(o.title).trim() || 'Unknown track';
     const artist = str(o.artist).trim() || 'Unknown artist';
     const album = str(o.album).trim();
-    const palette = PALETTES[hashOf(title + artist) % PALETTES.length];
+    const palette = PALETTES[hashOfPair(title, artist) % PALETTES.length];
     const hasArt = o.hasArt !== false;
 
     /*
