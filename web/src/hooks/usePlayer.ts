@@ -12,7 +12,7 @@ import {
   type LibraryPermission,
 } from '../services/deviceLibrary';
 import { initState, playerReducer } from '../state/player';
-import { LIKES_KEY, likedEntries, loadLikes } from '../state/likes';
+import { LIKES_KEY, loadLikes } from '../state/likes';
 import { mergeLibrary } from '../state/library';
 import type { Track } from '../types';
 import { coverGradient } from '../utils/artwork';
@@ -114,10 +114,17 @@ export function usePlayer(initialTracks: Track[] = TRACKS) {
   // one write, and tapping through a few of them is one write a moment later
   // rather than one per tap. Silent on the first run, which is the set that was
   // just read back.
+  //
+  // The map is handed over as it is. It used to be copied through
+  // `likedEntries()` first, which walks it and builds a second one holding only
+  // the `true` entries — but since 131 an un-like removes its key, so `liked`
+  // already holds exactly those. The copy was an object as large as the list of
+  // liked songs, built on every tap, for a blob `JSON.stringify` was about to
+  // walk anyway.
   const likedStored = useRef(false);
   useEffect(() => {
     if (firstRun(likedStored)) return undefined;
-    return persistSoon(LIKES_KEY, likedEntries(state.liked));
+    return persistSoon(LIKES_KEY, state.liked);
   }, [state.liked]);
 
   const [library, setLibrary] = useState<{ available: boolean; permission: LibraryPermission; scanning: boolean }>(() => ({

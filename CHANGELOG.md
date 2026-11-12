@@ -7,6 +7,19 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 136 — 12 November 2026
+
+**Every heart tap copied the whole likes map to store it.**
+
+The effect that saves the hearts passed `likedEntries(state.liked)` to the writer,
+which walks the map and builds a second one holding only the entries that are
+`true`. Since 131 an un-like removes its key, so `liked` already holds exactly
+that — the copy was an object as large as the list of liked songs, built on every
+tap, to produce the blob `JSON.stringify` was about to walk anyway.
+
+`state.liked` is handed to the writer directly. The stored JSON is byte for byte
+what it was, because the map it is written from already contained nothing else.
+
 ## 135 — 12 November 2026
 
 **Scrolling the list with a wheel measured the panel on every pointer frame.**
