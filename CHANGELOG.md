@@ -7,6 +7,20 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 133 — 12 November 2026
+
+**Pressing play rebuilt every row in the list.**
+
+`isPlaying` was handed to every row, and a row's props are what decide whether
+React skips it — so a new value re-rendered all of them: on a full phone, five
+thousand rows rebuilt to draw one equaliser. Only the playing row draws anything
+from it; every other row used it for nothing at all.
+
+The list now passes it to the row it belongs to and leaves the rest with `false`,
+which is what they were already drawing. A play or a pause re-renders the playing
+row and nothing else. The markup is unchanged: the equaliser still animates on the
+playing row, and only there.
+
 ## 132 — 11 November 2026
 
 **The playlist ran a highlight nothing in it drew.**

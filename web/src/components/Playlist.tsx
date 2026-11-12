@@ -242,13 +242,18 @@ export const Playlist = memo(function Playlist({
             aria-hidden="true"
           />
         )}
+        {/* Only the playing row draws the play state — it is what decides
+            whether its equaliser is animating, and nothing else in a row reads
+            it. Handing it to all of them meant every play and every pause was a
+            new prop for every row in the library: five thousand rows rebuilt, on
+            a full phone, to redraw one equaliser. */}
         {visible.map(({ track, index }) => (
           <TrackRow
             key={track.id}
             track={track}
             index={index}
             isActive={index === currentIndex}
-            isPlaying={isPlaying}
+            isPlaying={index === currentIndex && isPlaying}
             isLiked={!!liked[track.id]}
             onSelect={handleSelect}
             onToggleLike={onToggleLike}
