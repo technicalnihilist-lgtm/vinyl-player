@@ -86,7 +86,30 @@ public class MainActivity extends Activity {
     private volatile boolean scanning = false;
     /** A scan asked for while one was already running, to be done when it ends. */
     private volatile boolean rescanWanted = false;
-    private final LruCache<String, byte[]> artCache = new LruCache<>(64);
+    /** Marks a file that has no embedded picture, so it is not opened again. */
+    private static final byte[] NO_ART = new byte[0];
+    /** How much artwork to hold, in bytes — eight megabytes, whatever that is in covers. */
+    private static final int ART_CACHE_BYTES = 8 * 1024 * 1024;
+
+    /**
+     * The covers read out of the files, held by their size rather than by count.
+     *
+     * Two things were wrong with a cache of sixty-four entries. A cover is often
+     * 200–500 KB, so sixty-four of them is up to twenty megabytes of the app's
+     * heap held for artwork that has been scrolled past — a count says nothing
+     * about how much memory that is. And a file with no picture was never
+     * remembered at all: only a hit was cached, so every request for a track
+     * without art re-opened the file and ran `MediaMetadataRetriever` over the
+     * whole thing again to discover, again, that there was nothing to send. Most
+     * files on a phone carry no embedded art, so that was the common path.
+     */
+    private final LruCache<String, byte[]> artCache =
+            new LruCache<String, byte[]>(ART_CACHE_BYTES) {
+                @Override
+                protected int sizeOf(String key, byte[] value) {
+                    return Math.max(1, value.length);
+                }
+            };
 
     // ------------------------------------------------------- now playing card
     // Android has no Dynamic Island — that is an iPhone feature. The system's
@@ -829,9 +852,10 @@ public class MainActivity extends Activity {
         byte[] art = artCache.get(id);
         if (art == null) {
             art = readEmbeddedArt(id);
-            if (art != null && art.length > 0) artCache.put(id, art);
+            if (art == null || art.length == 0) art = NO_ART;
+            artCache.put(id, art);
         }
-        if (art == null || art.length == 0) return notFound();
+        if (art.length == 0) return notFound();
 
         boolean isPng = art.length > 8
                 && (art[0] & 0xFF) == 0x89 && art[1] == 'P' && art[2] == 'N' && art[3] == 'G';

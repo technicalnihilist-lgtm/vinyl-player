@@ -7,6 +7,26 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 142 — 12 November 2026
+
+**The art cache was bounded by count, and never remembered a miss.**
+
+Covers are read out of the files and kept in an `LruCache` of sixty-four
+*entries*. A cover is often 200–500 KB, so sixty-four of them is up to twenty
+megabytes of the app's heap held for artwork that has been scrolled past — a count
+says nothing about how much memory that is.
+
+And a file with no embedded picture was never remembered at all: only a hit was
+cached, so every request for a track without art re-opened the file and ran
+`MediaMetadataRetriever` over it again to discover, again, that there was nothing
+to send. Most files on a phone carry no embedded art, so that was the common path,
+not the rare one.
+
+The cache is bounded by bytes now — eight megabytes of artwork, whatever that is
+in covers — and remembers the files that have none, so each is read once.
+
+This release also adds the Play Store changelog for 142.
+
 ## 141 — 12 November 2026
 
 **Seeking into a song read the file one byte at a time.**

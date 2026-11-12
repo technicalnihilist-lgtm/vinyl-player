@@ -1,0 +1,3 @@
+Ten focused improvements: the playlist only redraws the row that is playing when playback starts or stops, a mouse drag scrolls it once a frame, and the glass no longer re-measures itself while the list scrolls under the pointer.
+The visualiser works out each bar's height once a frame instead of twice, reading the phone's library no longer builds a string per song, and the offline shell caches only the icons a page load reads.
+On the phone, the library is scanned once per launch instead of twice, seeking into a song no longer reads the file a byte at a time, and cover art is cached by size and remembers the files that have none.
