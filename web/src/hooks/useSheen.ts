@@ -76,8 +76,26 @@ export function useSheen(ref: RefObject<HTMLElement | null>): void {
     el.addEventListener('pointerleave', onLeave);
     // Anything that can move the surface: the window resizing or scrolling, and
     // the surface itself changing size (the panel's collapse, a row count change).
+    /**
+     * A scroll *inside* the surface cannot move the surface.
+     *
+     * `scroll` does not bubble, so it was captured on the window — which caught
+     * the playlist's own scrolling too. Scrolling the list with a wheel is
+     * exactly when the pointer is over the panel and moving, so every one of
+     * those scroll events threw the box away and the next pointer frame measured
+     * it again: a `getBoundingClientRect` right after two custom properties had
+     * been written to the surface, which is a forced style recalc and layout, on
+     * every frame of the scroll. The panel never scrolls itself — the list inside
+     * it does — so those are ignored.
+     */
+    const onScroll = (e: Event) => {
+      const target = e.target;
+      if (target && target !== el && target instanceof Node && el.contains(target)) return;
+      forgetBox();
+    };
+
     window.addEventListener('resize', forgetBox, { passive: true });
-    window.addEventListener('scroll', forgetBox, { passive: true, capture: true });
+    window.addEventListener('scroll', onScroll, { passive: true, capture: true });
     const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(forgetBox) : null;
     observer?.observe(el);
     return () => {
@@ -86,7 +104,7 @@ export function useSheen(ref: RefObject<HTMLElement | null>): void {
       el.removeEventListener('pointermove', onMove);
       el.removeEventListener('pointerleave', onLeave);
       window.removeEventListener('resize', forgetBox);
-      window.removeEventListener('scroll', forgetBox, { capture: true } as EventListenerOptions);
+      window.removeEventListener('scroll', onScroll, { capture: true } as EventListenerOptions);
       observer?.disconnect();
     };
   }, [ref]);

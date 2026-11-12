@@ -7,6 +7,23 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 135 — 12 November 2026
+
+**Scrolling the list with a wheel measured the panel on every pointer frame.**
+
+`scroll` does not bubble, so the glass surface caught it on the window — which
+also caught the playlist's own scrolling. Scrolling the list with a wheel is
+exactly when the pointer is over the panel and moving, so every scroll event threw
+away the panel's cached box, and the next pointer frame measured it again with
+`getBoundingClientRect` — right after two custom properties had been written to
+the surface, which is a forced style recalc and layout, on every frame of the
+scroll.
+
+A scroll that happens *inside* the surface cannot move the surface, and the panel
+never scrolls itself — the list inside it does — so those are ignored now. A
+scroll of the page, a resize, and a change in the surface's own size still forget
+the box, and the highlight still follows the pointer from the same rectangle.
+
 ## 134 — 12 November 2026
 
 **Dragging the list with a mouse scrolled it more than once a frame.**
