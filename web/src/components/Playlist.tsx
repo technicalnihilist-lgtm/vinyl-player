@@ -49,7 +49,12 @@ export const Playlist = memo(function Playlist({
 }: Props) {
   const listRef = useRef<HTMLUListElement | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
-  const drag = useRef({ active: false, startY: 0, startTop: 0, moved: false });
+  // `pendingY` is the newest pointer position, `frame` the paint waiting to
+  // apply it. A mouse reports far more often than the screen refreshes, so the
+  // drag used to write `scrollTop` several times inside one frame — each write a
+  // scroll of a list thousands of rows tall, all but the last thrown away before
+  // anything was painted.
+  const drag = useRef({ active: false, startY: 0, startTop: 0, moved: false, pendingY: 0, frame: 0 });
 
   const [query, setQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -136,22 +141,56 @@ export const Playlist = memo(function Playlist({
     [onSelect],
   );
 
+  /** Put the list where the drag has reached, in one write. */
+  const applyDrag = (list: HTMLUListElement) => {
+    const dy = drag.current.pendingY - drag.current.startY;
+    if (Math.abs(dy) > 4) drag.current.moved = true;
+    list.scrollTop = drag.current.startTop - dy;
+  };
+
   const onPointerDown = (e: ReactPointerEvent<HTMLUListElement>) => {
     if (e.pointerType !== 'mouse') return;
     const list = listRef.current;
     if (!list) return;
-    drag.current = { active: true, startY: e.clientY, startTop: list.scrollTop, moved: false };
+    drag.current = {
+      active: true,
+      startY: e.clientY,
+      startTop: list.scrollTop,
+      moved: false,
+      pendingY: e.clientY,
+      frame: 0,
+    };
   };
   const onPointerMove = (e: ReactPointerEvent<HTMLUListElement>) => {
-    const list = listRef.current;
-    if (!list || !drag.current.active) return;
-    const dy = e.clientY - drag.current.startY;
-    if (Math.abs(dy) > 4) drag.current.moved = true;
-    list.scrollTop = drag.current.startTop - dy;
+    if (!drag.current.active) return;
+    drag.current.pendingY = e.clientY;
+    if (drag.current.frame) return;
+    drag.current.frame = requestAnimationFrame(() => {
+      drag.current.frame = 0;
+      const list = listRef.current;
+      if (list && drag.current.active) applyDrag(list);
+    });
   };
   const endDrag = () => {
+    // The frame the drag had queued would land after this and move the list a
+    // little further, so the last position is applied here instead — the drag
+    // still ends exactly where the pointer let go.
+    const list = listRef.current;
+    if (drag.current.frame) {
+      cancelAnimationFrame(drag.current.frame);
+      drag.current.frame = 0;
+      if (list && drag.current.active) applyDrag(list);
+    }
     drag.current.active = false;
   };
+
+  useEffect(
+    () => () => {
+      if (drag.current.frame) cancelAnimationFrame(drag.current.frame);
+      drag.current.frame = 0;
+    },
+    [],
+  );
 
   const onKeyDown = (e: ReactKeyboardEvent<HTMLUListElement>) => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;

@@ -7,6 +7,21 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 134 — 12 November 2026
+
+**Dragging the list with a mouse scrolled it more than once a frame.**
+
+The mouse drag that scrolls the playlist wrote `scrollTop` on every
+`pointermove`. A mouse reports far more often than the screen refreshes, so one
+frame of a drag could carry several synchronous scroll writes — each of them a
+scroll of a list thousands of rows tall, all but the last thrown away before
+anything was painted.
+
+The newest position is recorded and applied once a frame now, and the position the
+drag ended on is applied immediately on release, so the list cannot stop a frame
+short of the pointer. The drag still scrolls to exactly where it scrolled to
+before; there are just fewer writes on the way.
+
 ## 133 — 12 November 2026
 
 **Pressing play rebuilt every row in the list.**
