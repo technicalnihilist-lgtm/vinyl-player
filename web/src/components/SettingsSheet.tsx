@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import type { Settings } from '../hooks/useSettings';
 import type { Style } from '../hooks/useStyle';
 import { Switch } from './Switch';
@@ -37,6 +37,29 @@ export const SettingsSheet = memo(function SettingsSheet({
   onStyleReset,
   onClose,
 }: Props) {
+  /**
+   * Escape dismisses the sheet.
+   *
+   * It is a modal dialog — it says so with `aria-modal`, it has a scrim, and a
+   * tap on that scrim closes it — and the one key every dialog answers did
+   * nothing at all. The only ways out were the scrim, the cross in the header and
+   * the Done button, so a keyboard user who opened it by accident had to tab
+   * through the whole panel to find one of them.
+   *
+   * The listener only exists while the sheet is open, so a stray Escape on the
+   * player itself still belongs to the browser.
+   */
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
   return (
     <div className={`sheet-layer${open ? ' is-open' : ''}`} aria-hidden={!open}>
       <div className="sheet-layer__scrim" onClick={onClose} />

@@ -7,6 +7,22 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 147 — 15 November 2026
+
+**Escape did not close the settings sheet.**
+
+The sheet announces itself as a modal dialog, dims the player behind a scrim, and
+closes when that scrim is tapped. The key that every dialog in every other app
+answers — Escape — did nothing. The only ways out were the scrim, the cross in the
+header and the Done button at the bottom, so a keyboard user who opened it by
+mistake had to tab through the whole panel to reach one of them, and the sheet
+stayed over the player until they did.
+
+It closes on Escape now, from a listener that exists only while the sheet is open
+so a stray Escape on the player itself still belongs to the browser. Measured with
+the app driven headlessly: the sheet is open, Escape is pressed, and it is closed —
+where before it was still open after the same press.
+
 ## 146 — 15 November 2026
 
 **Tab walked into the settings sheet while it was closed.**
