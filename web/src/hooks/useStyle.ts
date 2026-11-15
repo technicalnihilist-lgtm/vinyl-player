@@ -113,21 +113,53 @@ function clamp(n: number, lo: number, hi: number) {
   return Math.min(hi, Math.max(lo, n));
 }
 
+/**
+ * True only for a key the table really has.
+ *
+ * `key in MOODS` also answers true for everything an object inherits —
+ * `constructor`, `toString`, `hasOwnProperty` — so a store holding
+ * `{"mood":"constructor"}` passed the check, and `MOODS[mood]` came back as a
+ * function. `styleVars` reads `m.a`, `m.b`, `m.c` and the three blobs off it, every one of them
+ * `undefined`, and the app was handed a stylesheet with no background colours in
+ * it at all: the whole theme, gone, from one corrupted key. The same went for the
+ * record's disc.
+ */
+function owns(table: object, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(table, key);
+}
+
+/**
+ * A stored Style, or the defaults.
+ *
+ * Pure and exported, so the rules can be tested without a store: anything that is
+ * not a value we understand is dropped, one field at a time, and the rest of the
+ * style survives.
+ */
+export function parseStyle(raw: unknown): Style {
+  if (typeof raw !== 'string' || raw.length === 0) return DEFAULT_STYLE;
+  let p: Partial<Style>;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return DEFAULT_STYLE;
+    p = parsed as Partial<Style>;
+  } catch {
+    return DEFAULT_STYLE;
+  }
+  const out = { ...DEFAULT_STYLE };
+  // Accept only values we understand, so a corrupted store cannot break the UI.
+  if (typeof p.accent === 'string' && /^#[0-9a-f]{6}$/i.test(p.accent)) out.accent = p.accent;
+  if (typeof p.accentFromArt === 'boolean') out.accentFromArt = p.accentFromArt;
+  if (typeof p.mood === 'string' && owns(MOODS, p.mood)) out.mood = p.mood as MoodId;
+  if (typeof p.disc === 'string' && owns(DISCS, p.disc)) out.disc = p.disc as DiscId;
+  if (typeof p.glass === 'number' && Number.isFinite(p.glass)) out.glass = clamp(Math.round(p.glass), 0, 100);
+  if (typeof p.roundness === 'number' && Number.isFinite(p.roundness)) out.roundness = clamp(Math.round(p.roundness), 8, 34);
+  if (typeof p.depth === 'number' && Number.isFinite(p.depth)) out.depth = clamp(Math.round(p.depth), 0, 100);
+  return out;
+}
+
 function load(): Style {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_STYLE;
-    const p = JSON.parse(raw) as Partial<Style>;
-    const out = { ...DEFAULT_STYLE };
-    // Accept only values we understand, so a corrupted store cannot break the UI.
-    if (typeof p.accent === 'string' && /^#[0-9a-f]{6}$/i.test(p.accent)) out.accent = p.accent;
-    if (typeof p.accentFromArt === 'boolean') out.accentFromArt = p.accentFromArt;
-    if (typeof p.mood === 'string' && p.mood in MOODS) out.mood = p.mood as MoodId;
-    if (typeof p.disc === 'string' && p.disc in DISCS) out.disc = p.disc as DiscId;
-    if (typeof p.glass === 'number' && Number.isFinite(p.glass)) out.glass = clamp(Math.round(p.glass), 0, 100);
-    if (typeof p.roundness === 'number' && Number.isFinite(p.roundness)) out.roundness = clamp(Math.round(p.roundness), 8, 34);
-    if (typeof p.depth === 'number' && Number.isFinite(p.depth)) out.depth = clamp(Math.round(p.depth), 0, 100);
-    return out;
+    return parseStyle(localStorage.getItem(STORAGE_KEY));
   } catch {
     return DEFAULT_STYLE;
   }

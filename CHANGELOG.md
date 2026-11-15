@@ -7,6 +7,30 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 144 — 15 November 2026
+
+**One corrupted key in the store could take the whole theme away.**
+
+The style is read back from the local store one field at a time, and the check for
+the background mood and the record's disc was `p.mood in MOODS`. That is true for
+every key an object inherits as well as the ones it has: `constructor`, `toString`,
+`hasOwnProperty`, `valueOf`. So a store holding `{"mood":"constructor"}` — a
+half-written entry, a hand-edited one, or anything that ever writes to the same
+key — was accepted, and `MOODS['constructor']` is a function.
+
+`styleVars` then read `a`, `b`, `c` and the three blob colours off that function,
+all of them `undefined`, and handed the stylesheet `--bg-a: undefined` and friends.
+The app did not crash: it painted with no background colours at all, and the only
+way back was to find the Style panel and press Reset — which, since the style it
+compared against was the poisoned one, did not look like it was needed.
+
+Both tables are checked for the key they actually own now, so a value the app does
+not understand is dropped and the default kept. Reading a stored style is a pure
+exported function too, `parseStyle`, so the rules can be tested without a store:
+four tests cover a round trip, the six shapes that are not a style at all, a field
+of the wrong type being dropped on its own, and the four inherited keys that used
+to poison the theme.
+
 ## 143 — 15 November 2026
 
 **Pressing Next on the last song told the bar the song had restarted.**
