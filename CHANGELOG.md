@@ -7,6 +7,26 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 151 — 15 November 2026
+
+**The now-playing position was copied into a ref on every render.**
+
+The media card must be told the position without being told about the clock: the
+position lands in the player state four or five times a second, and an effect that
+depended on it pushed the song across the bridge just as often, which made the shell
+rebuild and re-post its notification that often. So the position was copied into a
+ref by an effect with no dependencies — one that therefore ran after every render,
+four or five times a second, to write two numbers that were only ever read on the
+handful of occasions the card is actually told something.
+
+It is read from the audio element when the card is told, which is the same number
+from the thing that is actually playing, and is right after a scrub — the state does
+not follow a scrub, so the old copy could publish a position the listener had
+already dragged away from. The per-render effect is gone.
+
+Verified by driving the app headlessly with a stand-in bridge and diffing every
+payload the page hands it: before and after, the same four messages, field for field.
+
 ## 150 — 15 November 2026
 
 **A song that failed once could not be played again for the rest of the session.**
