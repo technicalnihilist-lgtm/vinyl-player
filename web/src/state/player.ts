@@ -344,9 +344,20 @@ export function playerReducer(state: PlayerState, action: Action): PlayerState {
         ? { ...state, isPlaying: false, status: 'paused' }
         : { ...state, isPlaying: true, status: 'playing', error: null };
 
+    // A step that lands on the track already playing is not a change.
+    //
+    // At the end of the list with repeat off, `step()` deliberately stays put —
+    // and Previous at the first track does the same — but the answer was still
+    // turned into a new state with `currentTime: 0` and a fresh `nonce`. Nothing
+    // moves the audio element in that case (`el.ended` is false, so the play
+    // effect does not seek it), so the bar snapped to 0:00 and the state said a
+    // song had restarted from the top while the audio carried on from where it
+    // was, until the next `timeupdate` pulled the bar back. Pressing Next on the
+    // last song looked like a restart that never happened.
     case 'NEXT': {
       const r = step(state, 1, false);
       if (r.stop) return state;
+      if (r.index === state.currentIndex) return state;
       return {
         ...state,
         currentIndex: r.index,
@@ -361,6 +372,7 @@ export function playerReducer(state: PlayerState, action: Action): PlayerState {
     case 'PREV': {
       const r = step(state, -1, false);
       if (r.stop) return state;
+      if (r.index === state.currentIndex) return state;
       return {
         ...state,
         currentIndex: r.index,

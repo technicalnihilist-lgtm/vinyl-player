@@ -7,6 +7,27 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 143 — 15 November 2026
+
+**Pressing Next on the last song told the bar the song had restarted.**
+
+With repeat off, the end of the list is the end of the list: `step()` answers a
+Next there by staying exactly where it is, and a Previous at the first track does
+the same. The reducer turned that answer into a new state anyway — `currentTime:
+0`, a fresh `nonce`, the status of a track that is loading.
+
+Nothing moves the audio element in that case. The play effect only seeks when the
+element has ended, which it has not, so the song carried on from where it was
+while the state said 0:00 — the bar snapped back to the start of the song, and
+snapped forward again a quarter of a second later when the next `timeupdate`
+arrived. On a phone that reads as a restart that never happened.
+
+A step that resolves to the track already playing now returns the state it was
+given, which is both the truth and one fewer re-render of the whole app. Six tests
+cover it: Next at the end and Previous at the start are no-ops, a real step still
+moves and still zeroes the position, both directions still wrap with repeat on,
+and a one-song library still answers Next with nothing.
+
 ## 142 — 12 November 2026
 
 **The art cache was bounded by count, and never remembered a miss.**

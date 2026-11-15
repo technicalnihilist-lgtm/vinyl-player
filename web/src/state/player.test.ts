@@ -110,6 +110,50 @@ describe('an action that changes nothing keeps the same state', () => {
   });
 });
 
+describe('a next or previous that lands on the same track keeps the same state', () => {
+  // At the end of the list with repeat off, `step()` stays where it is. The
+  // reducer used to answer that with `currentTime: 0` and a fresh nonce, so the
+  // bar jumped to the start of a song that had not restarted — nothing seeks the
+  // element in that case, so the audio simply carried on from where it was.
+  it('NEXT on the last track with repeat off', () => {
+    const s = base(3, { currentIndex: 2, currentTime: 42, repeat: 'off', isPlaying: true, status: 'playing' });
+    expect(playerReducer(s, { type: 'NEXT' })).toBe(s);
+  });
+
+  it('PREV on the first track with repeat off', () => {
+    const s = base(3, { currentIndex: 0, currentTime: 42, repeat: 'off', isPlaying: true, status: 'playing' });
+    expect(playerReducer(s, { type: 'PREV' })).toBe(s);
+  });
+
+  it('still moves when there is somewhere to go', () => {
+    const s = base(3, { currentIndex: 0, currentTime: 42, repeat: 'off' });
+    const next = playerReducer(s, { type: 'NEXT' });
+    expect(next).not.toBe(s);
+    expect(next.currentIndex).toBe(1);
+    expect(next.currentTime).toBe(0);
+  });
+
+  it('still wraps at the end with repeat all', () => {
+    const s = base(3, { currentIndex: 2, currentTime: 42, repeat: 'all' });
+    const next = playerReducer(s, { type: 'NEXT' });
+    expect(next.currentIndex).toBe(0);
+  });
+
+  it('still wraps backwards with repeat all', () => {
+    const s = base(3, { currentIndex: 0, currentTime: 42, repeat: 'all' });
+    const prev = playerReducer(s, { type: 'PREV' });
+    expect(prev.currentIndex).toBe(2);
+  });
+
+  it('restarts a one-song library rather than freezing it', () => {
+    // A single track is the one case where staying put *is* the move: the
+    // element has ended, and ENDED replays it. A manual Next there is a no-op
+    // that must not report a restart either.
+    const s = base(1, { currentIndex: 0, currentTime: 9, repeat: 'off' });
+    expect(playerReducer(s, { type: 'NEXT' })).toBe(s);
+  });
+});
+
 describe('a play or pause that changes nothing keeps the same state', () => {
   // The media card, the shell's echo of a hardware button and the element itself
   // all reach these two. A press while the player is already in that state is not
