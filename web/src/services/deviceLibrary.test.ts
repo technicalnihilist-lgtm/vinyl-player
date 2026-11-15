@@ -106,3 +106,55 @@ describe('mapDeviceTracks', () => {
     expect(mapDeviceTracks({ tracks: 'nope' })).toEqual([]);
   });
 });
+
+describe('mapDeviceTracks() across a rescan', () => {
+  const byId = (tracks: ReturnType<typeof mapDeviceTracks>) =>
+    new Map(tracks.map((track) => [track.id, track]));
+
+  it('hands back the same objects when nothing has changed', () => {
+    const first = mapDeviceTracks(PAYLOAD);
+    const again = mapDeviceTracks(PAYLOAD, byId(first));
+    expect(again).toHaveLength(first.length);
+    for (let i = 0; i < first.length; i++) expect(again[i]).toBe(first[i]);
+  });
+
+  it('replaces only the song that changed', () => {
+    const first = mapDeviceTracks(PAYLOAD);
+    const edited = {
+      permission: 'granted',
+      tracks: PAYLOAD.tracks.map((t, i) => (i === 1 ? { ...t, title: 'Kesariya (film version)' } : t)),
+    };
+    const again = mapDeviceTracks(edited, byId(first));
+    expect(again[0]).toBe(first[0]);
+    expect(again[1]).not.toBe(first[1]);
+    expect(again[1].title).toBe('Kesariya (film version)');
+    expect(again[2]).toBe(first[2]);
+  });
+
+  it('keeps the cover a track had already worked out', () => {
+    const first = mapDeviceTracks(PAYLOAD);
+    const cover = first[0].fallbackArt;
+    const again = mapDeviceTracks(PAYLOAD, byId(first));
+    expect(again[0].fallbackArt).toBe(cover);
+  });
+
+  it('replaces a song whose picture claim changed, either way', () => {
+    const withArt = { permission: 'granted', tracks: PAYLOAD.tracks.map((t) => ({ ...t, hasArt: true })) };
+    const first = mapDeviceTracks(withArt);
+    expect(first[0].artwork).toContain('/art/');
+
+    const without = mapDeviceTracks(
+      { permission: 'granted', tracks: PAYLOAD.tracks.map((t) => ({ ...t, hasArt: false })) },
+      byId(first),
+    );
+    expect(without[0]).not.toBe(first[0]);
+    // ...and it falls back to the procedural cover rather than an image that is not there.
+    expect(without[0].artwork).toBe(without[0].fallbackArt);
+  });
+
+  it('reuses nothing when there is nothing to reuse', () => {
+    const first = mapDeviceTracks(PAYLOAD);
+    const second = mapDeviceTracks(PAYLOAD);
+    expect(second[0]).not.toBe(first[0]);
+  });
+});

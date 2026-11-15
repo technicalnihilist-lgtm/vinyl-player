@@ -70,10 +70,38 @@ const idStr = (v: unknown): string =>
 const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 0);
 
 /**
+ * Whether a track already made answers `hasArt` the same way.
+ *
+ * The claim is not stored on the track — it is baked into the getter — so it is
+ * read back off the answer: a track that has art answers its `artwork` with the
+ * art URL, and one that has not answers it with the procedural cover, which is the
+ * same string as its fallback.
+ */
+function samePicture(track: Track, id: string, hasArt: boolean): boolean {
+  return hasArt
+    ? track.artwork === `${NATIVE_ORIGIN}/art/${encodeURIComponent(id)}`
+    : track.artwork === track.fallbackArt;
+}
+
+/**
  * Turn the native payload into our Track shape. Pure, so it is unit-tested
  * against a captured payload without needing a device.
+ *
+ * Given the tracks of the previous scan, a song whose fields are all unchanged is
+ * handed back as the very same object.
+ *
+ * The shell rescans the library every time the app comes back to the foreground,
+ * and the page maps the whole payload again — a new `Track` for every song, with
+ * new getters over new closures. `TrackRow` is memoised on its props, and `track`
+ * is one of them, so a rescan that found one new song re-rendered every row in the
+ * library: thousands of rows rebuilt, thousands of `formatTime` calls, thousands of
+ * elements reconciled, to draw the same songs. Reusing the objects the rows already
+ * hold is what lets React skip all of them and render the one row that changed.
+ *
+ * The covers come for free with it: the strings a track's getters have already
+ * worked out live in that object's closure, so they survive the rescan too.
  */
-export function mapDeviceTracks(raw: unknown): Track[] {
+export function mapDeviceTracks(raw: unknown, previous?: Map<string, Track>): Track[] {
   const payload = raw as NativePayload | null;
   const list = payload?.tracks;
   if (!Array.isArray(list)) return [];
@@ -105,18 +133,39 @@ export function mapDeviceTracks(raw: unknown): Track[] {
      * screen ever read. Nothing else changes: each is built once, the first time
      * something asks for it, and the same string is answered afterwards.
      */
+    const trackId = `device-${id}`;
+    const src = `${NATIVE_ORIGIN}/audio/${encodeURIComponent(id)}`;
+    const duration = num(o.duration);
+
+    // Every field the row draws, and every field the getters close over. A song
+    // whose own file has not changed is the song the list is already showing.
+    const kept = previous?.get(trackId);
+    if (
+      kept &&
+      kept.title === title &&
+      kept.artist === artist &&
+      kept.album === album &&
+      kept.src === src &&
+      kept.duration === duration &&
+      kept.palette === palette &&
+      samePicture(kept, id, hasArt)
+    ) {
+      out.push(kept);
+      continue;
+    }
+
     let coverArt: string | null = null;
     let deviceArt: string | null = null;
     const cover = () => (coverArt ??= coverGradient(palette, (hashOf(id) % 900) + 50));
     const art = () => (deviceArt ??= `${NATIVE_ORIGIN}/art/${encodeURIComponent(id)}`);
 
     out.push({
-      id: `device-${id}`,
+      id: trackId,
       title,
       artist,
       album,
-      src: `${NATIVE_ORIGIN}/audio/${encodeURIComponent(id)}`,
-      duration: num(o.duration),
+      src,
+      duration,
       palette,
       get artwork(): string {
         return hasArt ? art() : cover();
@@ -153,6 +202,8 @@ const EMPTY_SNAPSHOT: DeviceLibrarySnapshot = { tracks: [], permission: 'unknown
 /** The last payload the shell handed over, and what we made of it. */
 let lastRaw: string | null = null;
 let lastSnapshot: DeviceLibrarySnapshot = EMPTY_SNAPSHOT;
+/** The tracks of the last snapshot by id, so a rescan can hand the same objects back. */
+let lastTracksById = new Map<string, Track>();
 
 export function readDeviceLibrary(): DeviceLibrarySnapshot {
   const bridge = deviceBridge();
@@ -166,9 +217,15 @@ export function readDeviceLibrary(): DeviceLibrarySnapshot {
     // track array, which is what lets the player skip the update altogether.
     if (raw === lastRaw) return lastSnapshot;
     const payload = JSON.parse(raw) as NativePayload & { scanning?: boolean };
+    // A rescan that found one new song used to replace every track object, and
+    // every row in the list is memoised on the track it was given — so one new
+    // song re-rendered the whole library. The songs that did not change come back
+    // as the objects they already were.
+    const tracks = mapDeviceTracks(payload, lastTracksById);
+    lastTracksById = new Map(tracks.map((track) => [track.id, track]));
     lastRaw = raw;
     lastSnapshot = {
-      tracks: mapDeviceTracks(payload),
+      tracks,
       permission: (payload?.permission as LibraryPermission) ?? 'unknown',
       scanning: Boolean(payload?.scanning),
     };

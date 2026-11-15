@@ -7,6 +7,31 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 149 — 15 November 2026
+
+**A rescan that found one new song re-rendered the whole library.**
+
+The shell rescans the phone's music every time the app comes back to the
+foreground, and the page maps the whole payload again — a fresh `Track` object for
+every song, each with its own getters over its own closures. `TrackRow` is memoised
+on the props it is given and the track is one of them, so a rescan that found one
+song added, or one title edited, or one file deleted, was a new object for every
+song: five thousand rows re-rendered on a full phone — five thousand `formatTime`
+calls, five thousand element trees reconciled — to draw a list in which one row was
+different. Unlock the phone and the app paid that.
+
+A song whose own fields have not changed is handed back as the object it already
+was, so React skips every row but the one that changed. The comparison is over
+everything a row draws and everything the getters close over — title, artist, album,
+source URL, duration, palette, and the picture claim, which is read back off the
+track's own `artwork`/`fallbackArt` rather than stored twice. The covers a track had
+already worked out come with it, because they live in that object's closure.
+
+Five tests cover it: an unchanged rescan returns the same objects, an edited title
+replaces only that one song, a track's cover survives, a changed picture claim
+replaces the song either way, and a scan with nothing to reuse still builds new
+objects.
+
 ## 148 — 15 November 2026
 
 **A file with no cover was asked for its cover again every time its row came back.**
