@@ -254,6 +254,31 @@ export function usePlayer(initialTracks: Track[] = TRACKS) {
           /* ignore */
         }
       }
+      /**
+       * A song that failed to load once could not be tried again.
+       *
+       * A media error leaves the element holding the resource that failed, and
+       * `play()` on it fails the same way every time after that — so pressing play
+       * again on the same song did nothing at all, for the rest of the session. The
+       * only way back was to move to another song and return, which is not a thing
+       * anyone thinks to do when the answer is "press play again".
+       *
+       * The source is handed over again before the play, which is what makes the
+       * second press a real retry: the element asks for the file once more and plays
+       * it if it arrives. A file that is genuinely unreadable fails again, and costs
+       * one request per press, which is what pressing play means.
+       */
+      if (el.error) {
+        const failed = stateRef.current.tracks[stateRef.current.currentIndex];
+        if (failed) {
+          el.src = resolvePlayableUrl(failed.src);
+          try {
+            el.load();
+          } catch {
+            /* ignore — the play() below reports it */
+          }
+        }
+      }
       const p = el.play();
       if (p && typeof p.catch === 'function') {
         p.catch((err: DOMException) => {

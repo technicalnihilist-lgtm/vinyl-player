@@ -7,6 +7,28 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 150 — 15 November 2026
+
+**A song that failed once could not be played again for the rest of the session.**
+
+The audio element is given the next track's source as soon as the track becomes
+active, and it fetches the metadata for it. If that fetch fails — a file the
+provider no longer has, a card pulled out mid-scan, a decoder that cannot read the
+file — the element is left holding the resource that failed, and `play()` on it
+fails the same way every time after that. Pressing play again did nothing at all:
+no new request, no sound, the same error message. The only way back was to move to
+another song and return to this one, which nobody thinks to do when the answer looks
+like "press play again".
+
+Before the play, an element that is carrying an error is handed its source once
+more, so the press is a real retry: it asks for the file again and plays it if it
+arrives. A file that is genuinely unreadable fails again, one request per press.
+
+Measured with the app driven headlessly and the shell answering the first request
+for a track with a 500: before, the first press left the element in media error 4
+with **one** request made and no way forward; after, the same press makes the second
+request, clears the error and plays — 1.13 seconds of audio in, the track is running.
+
 ## 149 — 15 November 2026
 
 **A rescan that found one new song re-rendered the whole library.**
