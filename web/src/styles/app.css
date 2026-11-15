@@ -1325,10 +1325,25 @@ select {
   inset: 0;
   z-index: 40;
   pointer-events: none;
+  /*
+   * Closed, the sheet is not in the tab order either.
+   *
+   * `pointer-events: none` stops a thumb and nothing else: the buttons inside the
+   * closed sheet were still focusable, so Tab walked into a panel that was
+   * translated off the bottom of the screen. Thirty-five of the app's seventy-five
+   * tab stops were inside it — a keyboard user tabbed through a dialog they could
+   * not see, and Enter toggled a setting from it. `visibility: hidden` takes the
+   * whole subtree out of the tab order and out of the paint; the delay on the
+   * transition is what lets it finish sliding down first.
+   */
+  visibility: hidden;
+  transition: visibility 0s linear 0.32s;
 }
 
 .sheet-layer.is-open {
   pointer-events: auto;
+  visibility: visible;
+  transition-delay: 0s;
 }
 
 .sheet-layer__scrim {

@@ -7,6 +7,28 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 146 — 15 November 2026
+
+**Tab walked into the settings sheet while it was closed.**
+
+The sheet slides down out of the window when it is dismissed, and it is taken out
+of the pointer's way with `pointer-events: none`. That stops a thumb. It does not
+stop a Tab key: the buttons inside the closed sheet are still in the document, so
+they are still in the tab order. Counted, on the app with a playlist open: **35 of
+the 75 tab stops were inside the closed sheet** — Close, six switches, every accent
+swatch, the mood buttons, three sliders, the record colours, Done and Reset.
+
+So a keyboard user tabbing across the player left the visible interface after the
+last transport button and walked through a panel that was off the bottom of the
+screen, where Enter toggled a setting they could not see. `aria-hidden` was already
+on the layer and does not affect focus.
+
+The layer is `visibility: hidden` while it is closed, which takes the whole subtree
+out of the tab order and out of the paint, with the change delayed by 0.32s so the
+sheet finishes its slide first — and cancelled the moment it opens, so the slide up
+is exactly what it was. Same 40 visible tab stops as before, and the sheet's box
+and pixels are unchanged (measured: same rect, same screenshot).
+
 ## 145 — 15 November 2026
 
 **The visualiser clamped every bar three times a frame.**
