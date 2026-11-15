@@ -7,6 +7,24 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 148 — 15 November 2026
+
+**A file with no cover was asked for its cover again every time its row came back.**
+
+A row remembers that its own cover failed to load, which is enough while the row
+stays mounted. Rows do not stay mounted: narrowing the search unmounts the ones that
+stop matching, clearing it mounts them again, and every one of those new rows asked
+the shell for the cover of a file that had already said it has none. Most files on a
+phone carry no picture, so this was the common path, not the rare one — and the
+request is not free even though it is answered from the shell's cache: a request
+into the native layer, an `<img>` built to receive a 404, and a re-render to hide it.
+
+Whether a file has a cover is a property of the file, not of the row, so it is
+remembered beside them now, in one set for the page. Measured on a sixty-song
+library whose files carry no art, driven headlessly: one search and one clear cost
+**77 requests before, 60 after** — 49 extra requests became 32, and 60 is exactly
+one per file. No file is asked twice.
+
 ## 147 — 15 November 2026
 
 **Escape did not close the settings sheet.**
