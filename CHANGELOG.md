@@ -7,6 +7,20 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 145 — 15 November 2026
+
+**The visualiser clamped every bar three times a frame.**
+
+137 took the `Math.pow` out of the reflection pass by working out the bars' heights
+once and sharing them. It left the clamp behind: `Math.min(1, levels[i])` was still
+called in the pass that builds the heights, again in the body pass, and again in the
+reflection — three times per bar, a hundred and eight calls a frame, thirty frames
+a second, to arrive at one number per bar.
+
+The clamped level is written into a table alongside the height now, in the pass that
+already reads it, and both drawing passes read it from there. Same clamp, same
+value, same pixels; three thousand fewer `Math.min` calls a second.
+
 ## 144 — 15 November 2026
 
 **One corrupted key in the store could take the whole theme away.**

@@ -117,6 +117,16 @@ export const Visualizer = memo(function Visualizer({ engine, isPlaying, reducedM
     // calls and seventy-two clamps a frame, thirty times a second, to arrive at
     // numbers that were already in hand.
     const heights = new Float64Array(BARS);
+    /**
+     * The level each bar is drawn at, clamped once for all three passes.
+     *
+     * Taking the `pow` out of the second pass left the *clamp* in both of them,
+     * and in the pass that works the heights out as well: three `Math.min(1,
+     * levels[i])` calls per bar per frame, a hundred and eight of them, to arrive
+     * at one number. It is read from here now — the same clamp, the same value,
+     * once.
+     */
+    const drawn = new Float64Array(BARS);
 
     const measureBars = () => {
       gap = Math.max(2, (width / BARS) * 0.34);
@@ -158,6 +168,7 @@ export const Visualizer = memo(function Visualizer({ engine, isPlaying, reducedM
       // The heights both passes draw from, once each. Same numbers, same power.
       for (let i = 0; i < BARS; i++) {
         const level = Math.min(1, levels[i]);
+        drawn[i] = level;
         heights[i] = level > 0 ? Math.pow(level, 0.82) * maxH : 0;
       }
 
@@ -167,7 +178,7 @@ export const Visualizer = memo(function Visualizer({ engine, isPlaying, reducedM
       // they can be one path filled once, and the pixels are identical.
       ctx.beginPath();
       for (let i = 0; i < BARS; i++) {
-        const level = Math.min(1, levels[i]);
+        const level = drawn[i];
         if (level < 0.012) continue;
         const h = Math.max(3, heights[i]);
         barPath(ctx, barX[i], baseline - h, barW, h, barW / 2);
@@ -177,7 +188,7 @@ export const Visualizer = memo(function Visualizer({ engine, isPlaying, reducedM
 
       ctx.beginPath();
       for (let i = 0; i < BARS; i++) {
-        const level = Math.min(1, levels[i]);
+        const level = drawn[i];
         if (level < 0.03) continue;
         const h = Math.max(2, heights[i]) * 0.6;
         barPath(ctx, barX[i], baseline + 6, barW, h, barW / 2);
