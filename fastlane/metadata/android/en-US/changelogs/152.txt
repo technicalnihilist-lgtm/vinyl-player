@@ -1,0 +1,8 @@
+Ten fixes and speed-ups for this release.
+Fixed: pressing Next on the last song no longer jumps the progress bar to 0:00.
+Fixed: a song that failed to load can be retried by pressing play again.
+Fixed: Escape closes the settings sheet, and Tab no longer walks into it while it is closed.
+Fixed: a corrupted stored style can no longer take the whole theme away.
+A rescan that finds one new song re-renders one row instead of the whole library, and a file with no cover is never asked for one twice.
+The volume slider tells the phone's audio system once a frame instead of once per report.
+The visualiser clamps each bar once a frame; the now-playing position is read from the element.

@@ -7,6 +7,30 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 152 — 15 November 2026
+
+**Dragging the volume slider told the phone's audio system thirty times a second.**
+
+Inside the Android shell the slider does not drive the element — it drives the
+phone's media volume, so that the app's slider and the hardware keys are the same
+knob. Every report of the drag went straight across the bridge: a call into the
+shell, a write to the media stream, a callback from the volume observer coming back
+the other way, and a state update to draw a level the finger had already moved past.
+A slider reports on every `input` *and* every `change`, far more often than the
+screen refreshes, so one drag was dozens of those round trips — thirty of them for
+thirty reports, measured.
+
+The newest level is kept and handed over on the next frame, which is the same thing
+133 and 134 did for the list and 101 did for the seek bar: at most one write a frame,
+whatever the input is doing. The last report always schedules that frame, so the
+level the drag ends on is always the level the phone gets.
+
+Measured with the app driven headlessly against a stand-in bridge, one drag of thirty
+reports: **thirty bridge calls before, one after** — and the same final level, 0.68,
+on both sides.
+
+This release also adds the Play Store changelog for 152.
+
 ## 151 — 15 November 2026
 
 **The now-playing position was copied into a ref on every render.**

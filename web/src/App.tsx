@@ -201,12 +201,39 @@ export default function App() {
   // slider sets the phone's volume; pressing the hardware keys moves the slider.
   useEffect(() => onSystemVolume((f) => actions.setVolume(f)), [actions]);
 
+  /** The level waiting to be handed to the phone, and the frame that will. */
+  const pendingVolume = useRef(0);
+  const volumeFrame = useRef(0);
+  useEffect(() => () => {
+    if (volumeFrame.current) cancelAnimationFrame(volumeFrame.current);
+    volumeFrame.current = 0;
+  }, []);
+
   const handleVolume = useCallback(
     (v: number) => {
       // Move the slider straight away, then tell the phone. The shell echoes the
       // settled value back, so the two never drift.
       actions.setVolume(v);
-      if (hasSystemVolume()) setSystemVolume(v);
+      if (!hasSystemVolume()) return;
+      //
+      // Told once a frame, not once per report.
+      //
+      // A slider reports far more often than the screen refreshes — every
+      // `input` and every `change` of the drag — and each of those went straight
+      // across the bridge: a call into the shell, a write to the phone's media
+      // stream, a callback from the volume observer coming back the other way, and
+      // a state update to draw a number the slider had already moved past. Thirty
+      // reports in one drag was thirty of those round trips.
+      //
+      // The newest level is kept and handed over on the next frame, so the phone
+      // moves at the speed of the screen. The last report always schedules that
+      // frame, so the level the drag ends on is always the level the phone gets.
+      pendingVolume.current = v;
+      if (volumeFrame.current) return;
+      volumeFrame.current = requestAnimationFrame(() => {
+        volumeFrame.current = 0;
+        setSystemVolume(pendingVolume.current);
+      });
     },
     [actions],
   );
