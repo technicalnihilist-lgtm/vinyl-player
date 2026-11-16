@@ -7,6 +7,30 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 155 — 16 November 2026
+
+**One unreadable scan emptied the playlist and stopped the music.**
+
+The Android shell hands the whole music library to the page as a single JSON
+string, and rescans it every time the app comes back to the foreground. The
+reader parsed that string inside a `try`, and the `catch` answered "no songs" —
+the empty snapshot. That answer went straight to the player as the new library,
+and the player did what it is told: the list was replaced with nothing, the song
+that was playing was no longer in it, playback stopped, the position went, and the
+empty state took over the panel. All of it because one message arrived truncated,
+half-written, or not at all.
+
+A payload that cannot be read is not a library with nothing in it. The last
+snapshot that could be read is kept instead — it is exactly what is already on
+screen, so the list, the current song and the audio playing through it are all
+untouched, and the next scan that reads cleanly replaces it in the normal way. The
+player's own check does the rest: the same track array is the same array, so there
+is not even a dispatch.
+
+Covered by a test that drives the reader through a stand-in shell: a good payload,
+then a truncated one — the tracks come back as the very same objects — then a good
+payload again, which is applied.
+
 ## 154 — 16 November 2026
 
 **Every rescan built two URLs for every song, to compare them with the two it already had.**

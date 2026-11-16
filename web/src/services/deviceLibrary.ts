@@ -245,7 +245,21 @@ export function readDeviceLibrary(): DeviceLibrarySnapshot {
     };
     return lastSnapshot;
   } catch {
-    return EMPTY_SNAPSHOT;
+    /**
+     * A payload that cannot be read is not a library with nothing in it.
+     *
+     * The shell hands the whole library over as one JSON string, and the reader
+     * has always swallowed a failure and answered "no songs". That answer is
+     * dispatched as the new library — which emptied the playlist, stopped the
+     * song that was playing and threw away the position in it, because one
+     * message arrived truncated or half-written. The listener saw their music
+     * disappear and had to scan again to get it back.
+     *
+     * The last snapshot that could be read is kept instead. It is what is already
+     * on screen, so the list, the current song and the playing audio all stay
+     * exactly as they are, and the next scan that reads cleanly replaces it.
+     */
+    return lastSnapshot;
   }
 }
 

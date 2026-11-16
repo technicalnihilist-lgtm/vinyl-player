@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mapDeviceTracks } from './deviceLibrary';
+import { mapDeviceTracks, readDeviceLibrary } from './deviceLibrary';
 
 // The eight palettes a device track can be given, in the order they are tried.
 const PALETTES: [string, string, string][] = [
@@ -156,5 +156,50 @@ describe('mapDeviceTracks() across a rescan', () => {
     const first = mapDeviceTracks(PAYLOAD);
     const second = mapDeviceTracks(PAYLOAD);
     expect(second[0]).not.toBe(first[0]);
+  });
+});
+
+describe('readDeviceLibrary', () => {
+  /** Stand in for the shell, so the reader can be driven without a device. */
+  const withBridge = (getLibrary: () => string) => {
+    (globalThis as unknown as { window?: unknown }).window = {
+      AndroidBridge: {
+        getLibrary,
+        requestPermission: () => undefined,
+        openAppSettings: () => undefined,
+        refresh: () => undefined,
+      },
+    };
+  };
+
+  it('keeps the last good library when the shell hands over something unreadable', () => {
+    const good = JSON.stringify({
+      permission: 'granted',
+      tracks: [{ id: '7', title: 'Kesariya', artist: 'Arijit Singh', album: '', duration: 268, hasArt: true }],
+    });
+    let payload = good;
+    withBridge(() => payload);
+
+    const first = readDeviceLibrary();
+    expect(first.tracks).toHaveLength(1);
+
+    // A message that arrived truncated. It used to be answered with "no songs",
+    // which emptied the playlist and stopped the song that was playing.
+    payload = '{"permission":"granted","tracks":[{"id":';
+    const second = readDeviceLibrary();
+    expect(second.tracks).toHaveLength(1);
+    expect(second.tracks[0]).toBe(first.tracks[0]);
+
+    // A scan that reads cleanly still replaces it.
+    payload = JSON.stringify({
+      permission: 'granted',
+      tracks: [
+        { id: '7', title: 'Kesariya', artist: 'Arijit Singh', album: '', duration: 268, hasArt: true },
+        { id: '8', title: 'Tum Hi Ho', artist: 'Arijit Singh', album: '', duration: 262, hasArt: false },
+      ],
+    });
+    expect(readDeviceLibrary().tracks).toHaveLength(2);
+
+    delete (globalThis as unknown as { window?: unknown }).window;
   });
 });
