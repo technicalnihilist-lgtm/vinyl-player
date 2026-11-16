@@ -54,7 +54,7 @@ export const Playlist = memo(function Playlist({
   // drag used to write `scrollTop` several times inside one frame — each write a
   // scroll of a list thousands of rows tall, all but the last thrown away before
   // anything was painted.
-  const drag = useRef({ active: false, startY: 0, startTop: 0, moved: false, pendingY: 0, frame: 0 });
+  const drag = useRef({ active: false, pointerId: -1, startY: 0, startTop: 0, moved: false, pendingY: 0, frame: 0 });
 
   const [query, setQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -152,8 +152,24 @@ export const Playlist = memo(function Playlist({
     if (e.pointerType !== 'mouse') return;
     const list = listRef.current;
     if (!list) return;
+    /**
+     * The pointer is taken for the whole drag.
+     *
+     * The drag used to end on `pointerleave`, which fires the moment the pointer
+     * crosses out of the list's box — and the list is not the whole panel. Drag
+     * a long library down and let the pointer reach the seek bar, the transport
+     * row or the edge of the window and the list simply stopped following it,
+     * halfway through the gesture, with the button still held. Nothing on screen
+     * said the drag was over, so it read as the list sticking.
+     *
+     * With the pointer captured the list keeps receiving the moves wherever the
+     * pointer goes, and the drag ends where a drag really ends: when the button
+     * comes up, or when the gesture is taken away.
+     */
+    e.currentTarget.setPointerCapture?.(e.pointerId);
     drag.current = {
       active: true,
+      pointerId: e.pointerId,
       startY: e.clientY,
       startTop: list.scrollTop,
       moved: false,
@@ -180,6 +196,14 @@ export const Playlist = memo(function Playlist({
       cancelAnimationFrame(drag.current.frame);
       drag.current.frame = 0;
       if (list && drag.current.active) applyDrag(list);
+    }
+    if (drag.current.pointerId >= 0) {
+      try {
+        list?.releasePointerCapture?.(drag.current.pointerId);
+      } catch {
+        /* the pointer is already gone — the browser released it itself */
+      }
+      drag.current.pointerId = -1;
     }
     drag.current.active = false;
   };
@@ -272,6 +296,7 @@ export const Playlist = memo(function Playlist({
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
+        onPointerCancel={endDrag}
         onPointerLeave={endDrag}
       >
         {lens && (

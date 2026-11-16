@@ -7,6 +7,29 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 156 — 16 November 2026
+
+**A drag-scroll stopped dead the moment the pointer left the list.**
+
+The playlist scrolls by hand on a desktop: press on the list, drag, and the rows
+follow. The drag ended on `pointerleave`, which fires the instant the pointer
+crosses out of the list's own box — and the list is not the whole panel. Drag a
+long library downwards and let the pointer reach the seek bar, the transport row,
+or the edge of the window, and the list stopped following it with the button still
+held. Nothing on screen said the drag was over, so it read as the list sticking
+for no reason; the way to carry on was to let go, move the pointer back over the
+list, and start again.
+
+The pointer is captured for the whole drag now, so the list keeps receiving the
+moves wherever the pointer goes. The drag ends where a drag really ends: when the
+button comes up, when the gesture is taken away by the system, or — as a
+fallback, for the browsers where a capture cannot be taken — when the pointer
+leaves. The capture is released when the drag ends, so nothing is held after it.
+
+One small thing came with it: a cancelled gesture (a system swipe, the
+notification shade coming down) used to leave the drag marked as still running,
+because only a release or a leave ended it. It ends on `pointercancel` too now.
+
 ## 155 — 16 November 2026
 
 **One unreadable scan emptied the playlist and stopped the music.**
