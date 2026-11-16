@@ -129,6 +129,34 @@ export const Playlist = memo(function Playlist({
     return list.querySelector<HTMLLIElement>(`[data-track-id="${id}"]`);
   }, []);
 
+  /**
+   * The row that is `at` rows down the list, read straight from its children.
+   *
+   * Measuring the highlight asked the list for `[data-track-id="…"]`, which walks
+   * the list's nodes until it finds the row — a few thousand of them on a full
+   * phone, and it was asked on every keystroke of a search, every tab change and
+   * every track change, from inside a layout effect where the walk is a forced
+   * style recalculation as well. The row's position in the list is already known:
+   * the rows are drawn in `visible` order, so the nth row on screen is the nth
+   * child of the list — one further along when the sliding highlight is the first
+   * child. Two lookups replace the walk.
+   *
+   * The fallback is the walk itself, for the render where the list has not caught
+   * up with the state yet.
+   */
+  const rowAt = useCallback(
+    (at: number, id: string): HTMLElement | null => {
+      const list = listRef.current;
+      if (!list || at < 0) return rowFor(id);
+      for (let i = at; i <= at + 1; i++) {
+        const el = list.children[i] as HTMLElement | undefined;
+        if (el && el.dataset.trackId === id) return el;
+      }
+      return rowFor(id);
+    },
+    [rowFor],
+  );
+
   // Keep the active row visible — when the *active row* changes, not when the
   // library does. `tracks` is a new array after every rescan and every import, and
   // depending on it scrolled the list back to the playing song while the listener
@@ -157,14 +185,14 @@ export const Playlist = memo(function Playlist({
       setLens((prev) => (prev === null ? prev : null));
       return;
     }
-    const el = rowFor(active.id);
+    const el = rowAt(visible.findIndex((row) => row.index === currentIndex), active.id);
     setLens((prev) => {
       if (!el) return prev === null ? prev : null;
       const y = el.offsetTop;
       const h = el.offsetHeight;
       return prev && prev.y === y && prev.h === h ? prev : { y, h };
     });
-  }, [currentIndex, tracks, visible, filter, query, rowFor]);
+  }, [currentIndex, tracks, visible, filter, query, rowAt]);
 
   useEffect(() => {
     if (searchOpen) searchRef.current?.focus();

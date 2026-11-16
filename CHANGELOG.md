@@ -7,6 +7,25 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 159 — 16 November 2026
+
+**Finding the playing row walked the whole list, on every keystroke of a search.**
+
+The sliding highlight behind the playing row is measured from that row's box, and
+the row was found by asking the list for `[data-track-id="…"]`. That is a walk of
+the list's DOM until the row turns up — a few thousand nodes on a full phone, more
+the further down the library the song is — and it happened inside a layout effect,
+so it was also a forced style recalculation on the way in. It was asked for on
+every keystroke of a search, every tab change, every library update and every
+track change, to re-measure a rectangle that usually had not moved a pixel.
+
+The row's position in the list is already known. The rows are drawn in `visible`
+order, so the nth row on screen is the nth child of the list — one further along
+when the highlight itself is the first child. Two child lookups replace the walk:
+check the nth child, and the one after it, and take whichever carries the id. The
+walk is still there as the fallback, for the render where the list has not caught
+up with the state yet, so a measurement can never come back empty because of it.
+
 ## 158 — 16 November 2026
 
 **Liking a song rebuilt every row in the playlist.**
