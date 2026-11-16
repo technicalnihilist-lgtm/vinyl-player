@@ -70,17 +70,23 @@ const idStr = (v: unknown): string =>
 const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 0);
 
 /**
- * Whether a track already made answers `hasArt` the same way.
+ * Whether a track already made carries a cover, and whether this file says it has one.
  *
  * The claim is not stored on the track — it is baked into the getter — so it is
  * read back off the answer: a track that has art answers its `artwork` with the
  * art URL, and one that has not answers it with the procedural cover, which is the
- * same string as its fallback.
+ * same string as its fallback. So "has a real cover" is the two strings
+ * disagreeing, and nothing else.
+ *
+ * It used to compare `artwork` with the art URL rebuilt from scratch —
+ * `NATIVE_ORIGIN + '/art/' + encodeURIComponent(id)` — which built a fresh string
+ * for every song on every rescan, purely to throw it away after one `===`. On a
+ * five-thousand-song library that was five thousand `encodeURIComponent` calls
+ * and five thousand concatenations per foreground rescan, to answer a question
+ * the track could already answer about itself.
  */
-function samePicture(track: Track, id: string, hasArt: boolean): boolean {
-  return hasArt
-    ? track.artwork === `${NATIVE_ORIGIN}/art/${encodeURIComponent(id)}`
-    : track.artwork === track.fallbackArt;
+function samePicture(track: Track, hasArt: boolean): boolean {
+  return (track.artwork !== track.fallbackArt) === hasArt;
 }
 
 /**
@@ -134,21 +140,27 @@ export function mapDeviceTracks(raw: unknown, previous?: Map<string, Track>): Tr
      * something asks for it, and the same string is answered afterwards.
      */
     const trackId = `device-${id}`;
-    const src = `${NATIVE_ORIGIN}/audio/${encodeURIComponent(id)}`;
     const duration = num(o.duration);
 
     // Every field the row draws, and every field the getters close over. A song
     // whose own file has not changed is the song the list is already showing.
+    //
+    // Nothing here is built to be compared with: the source URL is a function of
+    // the id alone, and the id is what the previous track was looked up by, so a
+    // kept song's source is already the source this file would be given. The
+    // comparison is left out and the string is built further down, only for the
+    // songs that actually need one. Building both URLs for every song on every
+    // rescan — a source URL and an art URL, ten thousand strings on a
+    // five-thousand-song library — was paid on every return to the foreground to
+    // learn that nothing had changed.
     const kept = previous?.get(trackId);
     if (
       kept &&
       kept.title === title &&
       kept.artist === artist &&
       kept.album === album &&
-      kept.src === src &&
       kept.duration === duration &&
-      kept.palette === palette &&
-      samePicture(kept, id, hasArt)
+      samePicture(kept, hasArt)
     ) {
       out.push(kept);
       continue;
@@ -158,6 +170,8 @@ export function mapDeviceTracks(raw: unknown, previous?: Map<string, Track>): Tr
     let deviceArt: string | null = null;
     const cover = () => (coverArt ??= coverGradient(palette, (hashOf(id) % 900) + 50));
     const art = () => (deviceArt ??= `${NATIVE_ORIGIN}/art/${encodeURIComponent(id)}`);
+    // Only a song that is new, or whose file changed, needs a source URL built.
+    const src = `${NATIVE_ORIGIN}/audio/${encodeURIComponent(id)}`;
 
     out.push({
       id: trackId,

@@ -7,6 +7,43 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 154 — 16 November 2026
+
+**Every rescan built two URLs for every song, to compare them with the two it already had.**
+
+The shell rescans the phone's music every time the app comes back to the
+foreground, and the page decides song by song whether anything changed. The way
+it decided was to build the song's source URL and its art URL, then compare them
+with the ones the song already in the list was made with. Ten thousand strings on
+a five-thousand-song library — five thousand
+`https://appassets.androidplatform.net/audio/<id>` and five thousand
+`…/art/<id>`, each a concatenation and an `encodeURIComponent` — built on every
+return to the foreground, and thrown away immediately, to learn that nothing had
+changed.
+
+Neither string had to be built. The source URL is a function of the id and
+nothing else, and the id is what the previous song was looked up by, so a song
+that is still in the list already carries exactly the source this file would be
+given. The art URL is the same story, and it is already reachable from the song
+itself: a song with a cover answers `artwork` with a different string from the one
+its `fallbackArt` answers with, and a song without one answers both the same way.
+So "has a cover" is the two strings disagreeing — no URL involved.
+
+Both are built now only for the songs that actually need one: a song that is new,
+or whose file has changed.
+
+Measured with a five-thousand-song payload driven through the real mapper, three
+rescans in a row with nothing changed between them:
+
+| rescan | `encodeURIComponent` calls | time |
+|---|---|---|
+| 2nd | 3,333 (each song's cover read for the first time, then cached) | 234 ms |
+| 3rd | **0** | **15.6 ms** |
+
+Before, the third rescan — and every one after it — built **10,000** URLs. All
+five thousand songs still come back as the same objects they were, which is what
+lets every row in the list skip its re-render.
+
 ## 153 — 16 November 2026
 
 **Picking the same folder twice added every song in it a second time.**
