@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { ReactElement } from 'react';
 import type { PointerEvent as ReactPointerEvent, KeyboardEvent as ReactKeyboardEvent } from 'react';
 import type { Track } from '../types';
 import { TrackRow } from './TrackRow';
@@ -27,6 +28,18 @@ interface Props {
 }
 
 type Filter = 'all' | 'liked';
+
+/** A row element, and everything it was built from. */
+interface BuiltRow {
+  index: number;
+  active: boolean;
+  playing: boolean;
+  liked: boolean;
+  numbers: boolean;
+  select: (index: number) => void;
+  like: (id: string) => void;
+  element: ReactElement;
+}
 
 /** A stable empty map, so the Library tab never depends on the liked list. */
 const NO_LIKES: Record<string, boolean> = {};
@@ -82,6 +95,33 @@ export const Playlist = memo(function Playlist({
     () => filterTracks(tracks, query, filter, likesForFilter),
     [tracks, query, filter, likesForFilter],
   );
+
+  /**
+   * The rows already built, by track id, with everything each one was built from.
+   *
+   * Liking a song changes one row. Playing or pausing changes one row. Moving to
+   * the next song changes two. Each of those changes `liked`, `isPlaying` or
+   * `currentIndex`, which are props of this component — so the whole list section
+   * re-rendered, and `visible.map` built a `TrackRow` element and a props object
+   * for every song in the library: five thousand element trees on a full phone,
+   * handed to React so that it could ask five thousand memoised rows whether they
+   * had changed and be told no by all but one.
+   *
+   * A row whose props are all the same as the last time it was built is handed
+   * back as the very element it was, so React compares an identity instead of
+   * eight props, and nothing is allocated for it at all. Only the row that
+   * changed is built again.
+   *
+   * The cache is emptied when the library array itself is replaced — a rescan, an
+   * import — because every row is rebuilt once then anyway, and it is the moment
+   * the set of ids can shrink.
+   */
+  const built = useRef(new Map<string, BuiltRow>());
+  const builtFor = useRef<Track[] | null>(null);
+  if (builtFor.current !== tracks) {
+    builtFor.current = tracks;
+    built.current.clear();
+  }
 
   const rowFor = useCallback((id: string) => {
     const list = listRef.current;
@@ -232,6 +272,59 @@ export const Playlist = memo(function Playlist({
     if (next !== null) onSelect(next);
   };
 
+  /**
+   * The rows to draw: the ones already built, plus whatever changed.
+   *
+   * Built in one pass rather than with `visible.map`, so the cache is filled and
+   * consulted without a second array of intermediate results.
+   */
+  const cache = built.current;
+  const rows: ReactElement[] = new Array(visible.length);
+  for (let i = 0; i < visible.length; i++) {
+    const { track, index } = visible[i];
+    const active = index === currentIndex;
+    const playing = active && isPlaying;
+    const isLiked = !!liked[track.id];
+    const hit = cache.get(track.id);
+    if (
+      hit &&
+      hit.index === index &&
+      hit.active === active &&
+      hit.playing === playing &&
+      hit.liked === isLiked &&
+      hit.numbers === showNumbers &&
+      hit.select === handleSelect &&
+      hit.like === onToggleLike
+    ) {
+      rows[i] = hit.element;
+      continue;
+    }
+    const element = (
+      <TrackRow
+        key={track.id}
+        track={track}
+        index={index}
+        isActive={active}
+        isPlaying={playing}
+        isLiked={isLiked}
+        onSelect={handleSelect}
+        onToggleLike={onToggleLike}
+        showNumbers={showNumbers}
+      />
+    );
+    cache.set(track.id, {
+      index,
+      active,
+      playing,
+      liked: isLiked,
+      numbers: showNumbers,
+      select: handleSelect,
+      like: onToggleLike,
+      element,
+    });
+    rows[i] = element;
+  }
+
   return (
     <section className="playlist" aria-label="Playlist">
       <header className="playlist__head">
@@ -311,19 +404,7 @@ export const Playlist = memo(function Playlist({
             it. Handing it to all of them meant every play and every pause was a
             new prop for every row in the library: five thousand rows rebuilt, on
             a full phone, to redraw one equaliser. */}
-        {visible.map(({ track, index }) => (
-          <TrackRow
-            key={track.id}
-            track={track}
-            index={index}
-            isActive={index === currentIndex}
-            isPlaying={index === currentIndex && isPlaying}
-            isLiked={!!liked[track.id]}
-            onSelect={handleSelect}
-            onToggleLike={onToggleLike}
-            showNumbers={showNumbers}
-          />
-        ))}
+        {rows}
       </ul>
 
       {visible.length === 0 && (

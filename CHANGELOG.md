@@ -7,6 +7,40 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 158 — 16 November 2026
+
+**Liking a song rebuilt every row in the playlist.**
+
+The list section is memoised on its props, and `liked`, `isPlaying` and
+`currentIndex` are three of them. Liking a song changes `liked`; playing or
+pausing changes `isPlaying`; moving to the next song changes `currentIndex`. So
+each of those re-rendered the section, and the section built its rows with
+`visible.map` — a `TrackRow` element and a props object for **every song in the
+library**, five thousand of them on a full phone, handed to React so that it could
+ask five thousand memoised rows whether they had changed and be told no by all but
+one.
+
+A row whose own props are all the same as the last time it was built is handed
+back as the very element it was, so React compares an identity rather than eight
+props, and nothing is allocated for it at all. Only the rows that actually changed
+are built again. The rows are built in one pass now rather than through `.map`, so
+the cache is filled and consulted without a second array of intermediate results,
+and it is emptied when the library array itself is replaced — a rescan, an import
+— which is the moment every row is rebuilt anyway and the moment the set of ids
+can shrink.
+
+Measured by running the loop over a five-thousand-song list:
+
+| what changed | rows built before | rows built after |
+|---|---|---|
+| one like | 5,000 | **1** |
+| play → pause | 5,000 | **1** |
+| next track | 5,000 | **2** |
+
+The two on a track change are the row that stopped playing and the row that
+started. Every other row is the same element it was, and nothing about it is
+looked at again.
+
 ## 157 — 16 November 2026
 
 **The settings sheet never took the focus, and never gave it back.**
