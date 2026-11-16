@@ -1,4 +1,4 @@
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import type { Settings } from '../hooks/useSettings';
 import type { Style } from '../hooks/useStyle';
 import { Switch } from './Switch';
@@ -60,10 +60,48 @@ export const SettingsSheet = memo(function SettingsSheet({
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+  /** Whatever had the focus when the sheet opened, so it can be handed back. */
+  const opener = useRef<HTMLElement | null>(null);
+
+  /**
+   * The sheet takes the focus when it opens, and gives it back when it closes.
+   *
+   * It announces itself as a modal dialog and dims the player behind a scrim,
+   * but the focus stayed exactly where it was — on the button in the top bar that
+   * opened it, which is now behind that scrim. A keyboard user who opened the
+   * sheet with Enter then had to tab all the way round the player, through every
+   * control on the screen it covers, before reaching the sheet's own first
+   * switch. Escape closed it and left the focus nowhere useful.
+   *
+   * The panel itself takes the focus rather than one of its controls, so the tab
+   * order starts at the top of the dialog and nothing is skipped. On the way out,
+   * the focus goes back to the button that opened it, which is where the next Tab
+   * belongs.
+   */
+  useEffect(() => {
+    if (!open) return undefined;
+    const active = document.activeElement;
+    opener.current = active instanceof HTMLElement ? active : null;
+    sheetRef.current?.focus();
+    return () => {
+      const back = opener.current;
+      opener.current = null;
+      if (back && document.contains(back)) back.focus();
+    };
+  }, [open]);
+
   return (
     <div className={`sheet-layer${open ? ' is-open' : ''}`} aria-hidden={!open}>
       <div className="sheet-layer__scrim" onClick={onClose} />
-      <div className="sheet glass" role="dialog" aria-modal="true" aria-label="Settings">
+      <div
+        className="sheet glass"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Settings"
+        tabIndex={-1}
+        ref={sheetRef}
+      >
         <header className="sheet__head">
           <h2 className="sheet__title">Settings</h2>
           <button type="button" className="glass-btn" aria-label="Close settings" onClick={onClose}>

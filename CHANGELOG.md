@@ -7,6 +7,25 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 157 — 16 November 2026
+
+**The settings sheet never took the focus, and never gave it back.**
+
+The sheet announces itself as a modal dialog, dims the player behind a scrim and
+takes the pointer off it, so that the only thing a thumb or a mouse can reach is
+the sheet. The focus did not move. It stayed on the button in the top bar that had
+opened the sheet — a button that is now behind that scrim. A keyboard user who
+opened the sheet with Enter had to tab through every control on the screen it was
+covering before reaching the sheet's own first switch, and Escape closed the sheet
+and left the focus wherever it had wandered.
+
+The sheet takes the focus as it opens now, and hands it back to whatever opened it
+as it closes. The panel itself takes it, rather than one of its controls, so the
+tab order starts at the top of the dialog and nothing inside it is skipped. The
+focus ring is suppressed on the panel alone, because it is a surface and not a
+control — it is the one place where an outline would be a change you could see,
+and the app looks exactly as it did.
+
 ## 156 — 16 November 2026
 
 **A drag-scroll stopped dead the moment the pointer left the list.**

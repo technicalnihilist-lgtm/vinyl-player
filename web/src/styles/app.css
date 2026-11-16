@@ -1320,6 +1320,14 @@ select {
    Settings — a sheet of sliding switches
    ========================================================================== */
 
+/* The dialog itself takes the focus when it opens — see SettingsSheet — so a
+   keyboard lands inside it rather than behind the scrim. It is not a control, so
+   it draws no focus ring of its own. */
+.sheet:focus,
+.sheet:focus-visible {
+  outline: none;
+}
+
 .sheet-layer {
   position: fixed;
   inset: 0;
