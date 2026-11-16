@@ -7,6 +7,27 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 161 — 16 November 2026
+
+**The release pipeline ran the test suite, then ignored what it said.**
+
+The workflow that builds every release runs the web app's checks before it builds
+anything: `npm ci`, the type check, the tests, the bundle. The test step was
+written `npm test -- --run || true`, and `|| true` is what makes a shell command
+succeed whatever happened inside it. A release could be tagged with a failing
+test — a broken reducer, a broken filter, a broken import — and the job would go
+green, build the APK, sign it and publish it, because the one step that could
+have stopped it had been told to carry on regardless.
+
+The `|| true` is gone. A failing test now fails the job, which means it never
+reaches the APK. `--run` went with it, because `npm test` in `web/` is already
+`vitest run` — a single pass, not a watcher — so the flag was only ever there to
+make the `|| true` look deliberate.
+
+The workflow file still parses, and the step now reads `npm ci`, `npm run
+typecheck`, `npm test`, `npm run build` — the same four commands, in the same
+order, with the same effect except that a failure is a failure.
+
 ## 160 — 16 November 2026
 
 **Every rescan hashed every song's title and artist, to pick a colour it had already picked.**
