@@ -679,52 +679,6 @@ select {
   margin-left: auto;
 }
 
-/* segmented control with a sliding pill */
-.segmented {
-  position: relative;
-  display: inline-flex;
-  padding: 3px;
-  border-radius: var(--r-pill);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.09);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
-}
-
-.segmented__pill {
-  will-change: transform;
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: calc(50% - 3px);
-  height: calc(100% - 6px);
-  border-radius: var(--r-pill);
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.62));
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.32);
-  transition: transform 0.27s var(--spring);
-}
-
-.segmented__pill.is-right {
-  transform: translateX(100%);
-}
-
-.segmented__item {
-  position: relative;
-  z-index: 1;
-  padding: 6px 14px;
-  border: 0;
-  border-radius: var(--r-pill);
-  background: transparent;
-  color: var(--muted);
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.segmented__item.is-active {
-  color: #14121c;
-}
-
 .playlist__search,
 .glass-field {
   display: flex;
@@ -1655,11 +1609,6 @@ select {
     width: 32px;
     height: 32px;
   }
-  .segmented__item {
-    padding: 5px 10px;
-    font-size: 11.5px;
-  }
-
   /* Compact transport: the like button lives on every row already, so it is
      dropped here to keep the controls on one line. */
   .panel__foot {
@@ -1802,7 +1751,6 @@ select {
   .empty {
     animation: none !important;
   }
-  .segmented__pill,
   .playlist__lens,
   .switch__knob,
   .sheet {
@@ -2370,16 +2318,6 @@ select {
   flex: 0 0 auto;
   opacity: 0.85;
 }
-.more__scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 29;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  cursor: default;
-}
-
 /* the version line at the foot of the settings sheet — the number to compare
    with what is on GitHub */
 .sheet__version {
@@ -2669,9 +2607,6 @@ select {
    ========================================================================== */
 
 :root {
-  --lg-blur: 20px;
-  --lg-sat: 1.7;
-  --lg-tint: 1;
   --bounce: cubic-bezier(.34,1.56,.64,1);
   --bounce-soft: cubic-bezier(.3,1.35,.5,1);
   --bounce-big: cubic-bezier(.2,1.7,.4,1);
@@ -2733,23 +2668,10 @@ select {
   opacity:0;
   transform:scale(.85)}}
 
-:root {
-  --lg-blur:20px;
-  --lg-sat:1.7;
-  --lg-tint:1;
-  --bounce:cubic-bezier(.34,1.56,.64,1);
-  --bounce-soft:cubic-bezier(.3,1.35,.5,1);
-  --bounce-big:cubic-bezier(.2,1.7,.4,1)
-}
-
 /* tap bounce */
-button,.row,.tabbar__item,.glass-btn,.glass-pill,.icon-btn,.swatch,.mood,.more__item,.segmented__item,.optionbar__item {
+button,.row,.tabbar__item,.glass-btn,.glass-pill,.icon-btn,.swatch,.mood,.more__item,.optionbar__item {
   transition:transform calc(.5s*var(--bs,1)) var(--bounce),background .25s ease,box-shadow .25s ease,opacity .25s ease,color .2s ease;
   -webkit-tap-highlight-color:transparent
-}
-
-.bounce-pop {
-  animation:bpop calc(.6s*var(--bs,1)) var(--bounce)
 }
 
 /* open / close bounce */
@@ -2775,21 +2697,12 @@ button,.row,.tabbar__item,.glass-btn,.glass-pill,.icon-btn,.swatch,.mood,.more__
   animation:rowBounce calc(.55s*var(--bs,1)) var(--bounce) backwards
 }
 
-.tabbar__pill,.segmented__pill {
+.tabbar__pill {
   transition:transform calc(.55s*var(--bs,1)) var(--bounce),width calc(.55s*var(--bs,1)) var(--bounce),left calc(.55s*var(--bs,1)) var(--bounce) !important
 }
 
 .switch__knob {
   transition:transform calc(.45s*var(--bs,1)) var(--bounce) !important
-}
-
-/* playing: app bounces to the beat (transform-safe elements only) */
-.app--playing .transport__play {
-  animation:beat 1calc(.6s*var(--bs,1)) var(--bounce) infinite
-}
-
-.app--playing .vinyl__glow {
-  animation:beat 1calc(.6s*var(--bs,1)) var(--bounce) infinite
 }
 
 /* launch */
@@ -2813,24 +2726,16 @@ button,.row,.tabbar__item,.glass-btn,.glass-pill,.icon-btn,.swatch,.mood,.more__
   transition:transform calc(.65s*var(--bs,1)) var(--bounce-soft),opacity .3s ease !important
 }
 
-.app.app-resume.go {
-  animation:appOpen calc(.9s*var(--bs,1)) var(--bounce-big) backwards
-}
-
 
 /* The bounce is decoration. Anyone who has asked their device to calm down gets
    none of it. */
 @media (prefers-reduced-motion: reduce) {
   .app,
-  .app.app-resume.go,
   .splash.is-leaving,
   .splash__mark,
   .panel,
   .row,
-  .more__menu,
-  .bounce-pop,
-  .app--playing .transport__play,
-  .app--playing .vinyl__glow {
+  .more__menu {
     animation: none !important;
   }
 }

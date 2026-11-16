@@ -1,0 +1,9 @@
+Ten fixes and speed-ups for this release.
+Fixed: adding the same folder twice no longer adds every song a second time.
+Fixed: one unreadable library scan no longer empties the playlist or stops the music.
+Fixed: dragging the playlist no longer stops when the pointer leaves the list.
+Fixed: the settings sheet takes the keyboard focus and gives it back when it closes.
+Liking a song, playing or pausing rebuilds one row instead of the whole library.
+A rescan builds no URLs and hashes nothing for songs that have not changed.
+The highlight behind the playing row is read from the list instead of searched for.
+The release build now fails if a test fails, and the stylesheet is smaller.

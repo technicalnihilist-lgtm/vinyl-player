@@ -7,6 +7,38 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 162 — 16 November 2026
+
+**The stylesheet still carried a control the app does not have, and two declarations the browser throws away.**
+
+Three things had been left behind in `app.css`, all of them shipped in every build
+and parsed by every device before the first frame:
+
+- **A whole segmented control.** `.segmented`, `.segmented__pill`,
+  `.segmented__pill.is-right`, `.segmented__item` and `.segmented__item.is-active`
+  — a sliding-pill control with a background, a border, a shadow, a transition and
+  a media-query variant — for a component the app has not rendered since the tab
+  bar replaced it. Nothing in `src/` carries any of those class names.
+- **Two declarations the parser discards.** `.app--playing .transport__play` and
+  `.app--playing .vinyl__glow` set `animation: beat 1calc(.6s*var(--bs,1)) …`, and
+  `1calc(` is not a time: the whole declaration is invalid and dropped, so neither
+  rule has ever done anything. They are gone rather than repaired — making them
+  work would start the play button pulsing, which is a change you would see.
+- **A second `:root` block** repeating four custom properties that the block
+  twenty lines above it had already set to the same values, plus three
+  `--lg-*` properties nothing reads — no `var(--lg-` appears anywhere in the
+  stylesheet or the source.
+
+Along with a `.more__scrim` rule for a scrim the overflow menu does not draw, a
+`.bounce-pop` class no element carries, an `.app-resume` state the app never
+enters, and the mentions of all of them in shared selector lists.
+
+The bundle: **42.75 kB → 41.24 kB** of CSS, **9.48 kB → 9.23 kB** gzipped. Nothing
+on screen changes — every selector removed was one no element in the app can
+match, and every declaration removed was one the browser had already thrown away.
+The stylesheet's braces still balance, and the production build and the full test
+suite both pass.
+
 ## 161 — 16 November 2026
 
 **The release pipeline ran the test suite, then ignored what it said.**
