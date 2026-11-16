@@ -7,6 +7,35 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 153 — 16 November 2026
+
+**Picking the same folder twice added every song in it a second time.**
+
+"Add files" and "Add a folder" hand over whatever was picked, and every song was
+given an id stamped with the moment of the import — `import-<time>-<n>`. The
+playlist's duplicate check compares ids, so it never had anything to compare: two
+imports of one folder produced two ids for every file, and both were added. The
+list doubled. The hearts given to the first copies no longer matched the second.
+And the import paid for a metadata read per file to discover a duration it had
+already discovered the first time — six hundred files, six hundred decoder opens,
+to learn nothing.
+
+A file is now identified by the three things that make it that file: its name,
+its size, and when it was last written. They are already on the `File` object the
+picker handed over, so reading them costs nothing, and they survive being picked
+again. The check happens before anything is opened, so a repeated import of a
+folder is a few hundred string comparisons rather than a few hundred metadata
+reads. A file that appears twice inside one selection is kept once, too.
+
+Measured with a stand-in picker: the same three files imported twice left **six
+rows and six metadata reads before, three rows and three reads after** — and the
+second pick of the same folder now reads nothing at all.
+
+Five tests cover it: the key is stable for the same file, separates files that
+differ in name, size or date, only imported songs are collected, a repeated
+folder adds nothing, only the genuinely new file survives a mixed pick, and a
+file that appears twice in one pick is kept once.
+
 ## 152 — 15 November 2026
 
 **Dragging the volume slider told the phone's audio system thirty times a second.**

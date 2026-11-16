@@ -16,6 +16,12 @@ export interface Track {
   palette: [string, string, string];
   /** Where the track came from. */
   source?: 'device' | 'import';
+  /**
+   * What the file that became this song was identified by, for the songs added
+   * by hand. See `utils/imports.ts` — it is what stops the same folder being
+   * added twice.
+   */
+  importKey?: string;
   /** Procedural cover shown when `artwork` is missing or fails to load. */
   fallbackArt?: string;
 }

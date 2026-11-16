@@ -17,6 +17,7 @@ import { mergeLibrary } from '../state/library';
 import type { Track } from '../types';
 import { coverGradient } from '../utils/artwork';
 import { clampTime } from '../utils/format';
+import { freshFiles, importKey, importedKeys } from '../utils/imports';
 import { firstRun, persistSoon } from '../utils/persist';
 
 const IMPORT_PALETTES: [string, string, string][] = [
@@ -402,9 +403,19 @@ export function usePlayer(initialTracks: Track[] = TRACKS) {
   const openSystemSettings = useCallback(() => openAppSettings(), []);
 
   const importFiles = useCallback(async (files: FileList | File[]): Promise<number> => {
-    const list = Array.from(files).filter(
+    const candidates = Array.from(files).filter(
       (f) => f.type.startsWith('audio') || /\.(mp3|wav|ogg|m4a|aac|flac|opus)$/i.test(f.name),
     );
+    if (!candidates.length) return 0;
+    // A file that is already in the playlist is not added again. The ids of
+    // imported songs used to be stamped with the moment they were imported, so
+    // the reducer's own duplicate check — which compares ids — never had
+    // anything to compare, and picking the same folder twice doubled the list.
+    // The check happens here, before anything is read, so a repeated import of a
+    // folder of five hundred songs costs five hundred string comparisons instead
+    // of five hundred metadata reads.
+    const known = importedKeys(stateRef.current.tracks);
+    const list = freshFiles(candidates, known);
     if (!list.length) return 0;
     const stamp = Date.now();
 
@@ -437,6 +448,7 @@ export function usePlayer(initialTracks: Track[] = TRACKS) {
         palette,
         artwork: coverGradient(palette, (stamp + i) % 900 + 50),
         source: 'import',
+        importKey: importKey(file),
       };
     });
     dispatch({ type: 'ADD_TRACKS', tracks });
