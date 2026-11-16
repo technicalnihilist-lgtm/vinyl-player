@@ -7,6 +7,27 @@ GitHub. The version number below is the one the app reports in
 
 ---
 
+## 160 — 16 November 2026
+
+**Every rescan hashed every song's title and artist, to pick a colour it had already picked.**
+
+A song's palette — the three accent colours its cover and its glow are drawn from
+— is a hash of its title and artist, and it was worked out for every song in the
+phone's library before the check that decides whether the song had changed. So a
+rescan that found nothing new still hashed five thousand pairs of strings, walking
+a hundred thousand characters, to arrive at the same three colours those songs
+were already drawn with.
+
+The palette is a function of the title and the artist, and both of those are part
+of the comparison — so a song that is kept already carries the palette this file
+would be given, and the hash has nothing to add. It is worked out after the check
+now, for the songs that actually need one: a new song, or one whose file changed.
+
+Measured on a five-thousand-song payload through the real mapper, best of five
+consecutive unchanged rescans on the same machine: **8.26 ms before, 5.04 ms
+after** — a little over a third of the rescan, given back on every return to the
+foreground.
+
 ## 159 — 16 November 2026
 
 **Finding the playing row walked the whole list, on every keystroke of a search.**

@@ -124,7 +124,6 @@ export function mapDeviceTracks(raw: unknown, previous?: Map<string, Track>): Tr
     const title = str(o.title).trim() || 'Unknown track';
     const artist = str(o.artist).trim() || 'Unknown artist';
     const album = str(o.album).trim();
-    const palette = PALETTES[hashOfPair(title, artist) % PALETTES.length];
     const hasArt = o.hasArt !== false;
 
     /*
@@ -165,6 +164,14 @@ export function mapDeviceTracks(raw: unknown, previous?: Map<string, Track>): Tr
       out.push(kept);
       continue;
     }
+
+    // The palette is a function of the title and the artist, and both have just
+    // been compared, so a song that was kept already has the palette this file
+    // would be given. It is worked out here, for the songs that need one, rather
+    // than above for every song on every rescan — five thousand string hashes on
+    // a five-thousand-song library, on every return to the foreground, to arrive
+    // at a number that was already in hand.
+    const palette = PALETTES[hashOfPair(title, artist) % PALETTES.length];
 
     let coverArt: string | null = null;
     let deviceArt: string | null = null;
